@@ -41,23 +41,12 @@ const generateBlockStackShell = (stackCount: number, max: number, min: number) =
 
 const generateSeed = (blockStackMap: number[][], maxScore: number, colorCount: number) => {
   let colors: number[] = [];
-  for (let i = 0; i < maxScore; i += 1) {
+  for (let i = 0; i < colorCount; i += 1) {
     colors.push(i);
   }
 
-  const pickedColor: number[] = []
-  const pickColor = () => {
-    const {pickedEle, extractedArray} = extractRandomFromArray(colors);
-    colors = extractedArray;
-    pickedColor.push(pickedEle);
-  }
-
-  for(let i = 0; i < colorCount; i += 1) {
-    pickColor();
-  }
-  
   const stackShell = blockStackMap;
-  let pickedColorCopy = pickedColor.slice(0);
+  let pickedColorCopy = colors.slice(0);
   let stackShellIndexArray = stackShell.map((_, index) => index);
   for (let i = 0; i < colorCount; i += 1) {
     const {pickedEle: randomShellIndex, extractedArray: nextStackShellIndexArray} = extractRandomFromArray(stackShellIndexArray);

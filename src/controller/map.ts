@@ -16,11 +16,16 @@ const controller = {
       || colorCount === undefined
       || maxScore === undefined) {
         res.status(400)
-        res.send('INVALID INPUT');
-      } else {
-        const map = generateMap(option);
-        res.send(JSON.stringify(map));
+        return res.send('INVALID INPUT');
       }
+  
+    if (Number(shuffleCount) > 10000) {
+      res.status(400)
+      return res.send('suffleCount should not exceed 10000');
+    }
+    
+    const map = generateMap(option);
+    res.send(JSON.stringify(map));
   }
 }
 
