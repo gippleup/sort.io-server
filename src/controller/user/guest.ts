@@ -23,7 +23,7 @@ const controller: GuestController = {
         });
     user.name = 'guest' + (lastUserId + 1);
     await userRepo.save(user);
-    const createdGuest = await userRepo.find({where: {
+    const createdGuest = await userRepo.findOne({where: {
       id: user.id,
     }});
     res.json(createdGuest);
