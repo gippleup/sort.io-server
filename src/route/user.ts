@@ -6,6 +6,9 @@ const router = Router();
 
 router.get('/', (req, res) => res.send('connected'));
 
+router.get('/ticket', controller.ticket.get);
+router.post('/ticket', controller.ticket.post);
+
 router.get('/playdata', controller.playdata.get);
 router.post('/playdata', controller.playdata.post);
 
