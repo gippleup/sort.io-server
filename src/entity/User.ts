@@ -16,7 +16,7 @@ export class User {
   createdAt!: string;
 
   @Column("int")
-  goldDeposit!: number;
+  gold!: number;
 
   @Column("varchar")
   items!: string;
@@ -28,8 +28,5 @@ export class User {
   profileImg!: string;
 
   @Column("int")
-  leftTicket!: number;
-
-  @Column("int")
-  lastLevel!: number;
+  left!: number;
 }

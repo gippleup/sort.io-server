@@ -14,8 +14,14 @@ export class Match {
   @Column("int")
   winner!: number;
 
+  @Column("boolean")
+  isDraw!: boolean;
+
   @Column("int")
-  loser!: number;
+  difficulty!: number;
+
+  @Column("float")
+  timeConsumed!: number;
 
   @Column("timestamp")
   createdAt!: string;
