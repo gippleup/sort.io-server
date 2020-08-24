@@ -18,9 +18,18 @@ export class User {
   @Column("int")
   goldDeposit!: number;
 
-  @Column("int")
-  rubyDeposit!: number;
-
   @Column("varchar")
   items!: string;
+
+  @Column("boolean")
+  isTemp!: boolean;
+
+  @Column("varchar")
+  profileImg!: string;
+
+  @Column("int")
+  leftTicket!: number;
+
+  @Column("int")
+  lastLevel!: number;
 }
