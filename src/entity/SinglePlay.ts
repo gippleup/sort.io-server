@@ -1,4 +1,4 @@
-import { PrimaryGeneratedColumn, Column, Entity } from "typeorm";
+import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn } from "typeorm";
 
 @Entity()
 export class SinglePlay {
@@ -8,7 +8,7 @@ export class SinglePlay {
   @Column("int")
   userId!: number;
 
-  @Column("timestamp")
+  @CreateDateColumn()
   createdAt!: string;
 
   @Column("int")
