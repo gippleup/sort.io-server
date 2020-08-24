@@ -1,4 +1,4 @@
-import {Entity, Column, PrimaryGeneratedColumn, Unique, CreateDateColumn} from 'typeorm'
+import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from 'typeorm'
 
 @Entity()
 export class User {
@@ -28,5 +28,5 @@ export class User {
   profileImg!: string;
 
   @Column("int")
-  left!: number;
+  ticket!: number;
 }

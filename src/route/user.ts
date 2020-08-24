@@ -5,7 +5,11 @@ import guestRouter from './user/guest';
 const router = Router();
 
 router.get('/', (req, res) => res.send('connected'));
-router.get('/signup', controller.signup)
+
+router.get('/playdata', controller.playdata.get);
+router.post('/playdata', controller.playdata.post);
+
+router.post('/signup', controller.signup)
 router.get('/signin', controller.signin)
 router.get('/signout', controller.signout)
 router.get('/delete', controller.delete)
