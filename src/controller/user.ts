@@ -1,15 +1,17 @@
 import { ExpressController } from "./types"
 import { User } from "../entity/User"
 import { getRepository, createQueryBuilder } from "typeorm";
-import { SinglePlay } from "../entity/SinglePlay";
-import { Match } from "../entity/Match";
+import { getUserById } from "../utils/user";
+import { getSinglePlayByUserId } from "../utils/singlePlay";
+import { getMultiPlayByUserId } from "../utils/multiPlay";
 
-type UserControllerTypes = "signup" | "signin" | "signout" | "delete";
+type UserControllerPureTypes = "signup" | "signin" | "signout" | "delete";
+type UserControllerDualTypes = "gold" | "playdata";
 
 type UserController = {
-  [T in UserControllerTypes]: ExpressController;
+  [T in UserControllerPureTypes]: ExpressController;
 } & {
-  playdata: {
+  [T in UserControllerDualTypes]: {
     get: ExpressController;
     post: ExpressController;
   }
@@ -35,24 +37,22 @@ const controller: UserController = {
   },
   delete: (req, res) => {
   },
+  gold: {
+    get: async (req, res) => {
+      const {userId} = req.query
+      const user = await getUserById(Number(userId));
+      const gold = user?.gold;
+      res.send(gold);
+    },
+    post: async (req, res) => {
+    },
+  },
   playdata: {
     get: async (req, res) => {
       const {userId} = req.query
-      const userRepo = getRepository(User);
-      const singlePlayRepo = getRepository(SinglePlay);
-      const multiPlayRepo = getRepository(Match);
-      const user = await userRepo
-        .createQueryBuilder("user")
-          .where("user.id = :id", {id: userId})
-          .getOne();
-      const singlePlay = await singlePlayRepo
-        .createQueryBuilder("single_play")
-          .where("single_play.userId = :userId", {userId: userId})
-          .getMany();
-      const multiPlay = await multiPlayRepo
-        .createQueryBuilder("match")
-        .where("match.user1 = :userId OR match.user2 = :userId", { userId: userId })
-        .getMany();
+      const user = await getUserById(Number(userId));
+      const singlePlay = await getSinglePlayByUserId(Number(userId));
+      const multiPlay = await getMultiPlayByUserId(Number(userId));
       res.json({
         user,
         singlePlay,
