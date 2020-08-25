@@ -12,8 +12,7 @@ router.post('/ticket', controller.ticket.post);
 router.get('/playdata', controller.playdata.get);
 router.post('/playdata', controller.playdata.post);
 
-router.post('/signup', controller.signup)
-router.get('/signin', controller.signin)
+router.post('/signin', controller.signin)
 router.get('/signout', controller.signout)
 router.get('/delete', controller.delete)
 
