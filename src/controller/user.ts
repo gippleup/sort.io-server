@@ -1,7 +1,7 @@
 import { ExpressController } from "./types"
 import { User } from "../entity/User"
-import { getRepository, createQueryBuilder, getConnection, createConnection } from "typeorm";
-import { getUserById, setUserData } from "../utils/user";
+import { getRepository } from "typeorm";
+import { getUserById, setUserData, getUserByGoogleId } from "../utils/user";
 import { getSinglePlayByUserId } from "../utils/singlePlay";
 import { getMultiPlayByUserId } from "../utils/multiPlay";
 
@@ -78,15 +78,38 @@ const controller: UserController = {
   },
   playdata: {
     get: async(req, res) => {
-      const {userId} = req.query
-      const user = await getUserById(Number(userId));
-      const singlePlay = await getSinglePlayByUserId(Number(userId));
-      const multiPlay = await getMultiPlayByUserId(Number(userId));
-      res.json({
-        user,
-        singlePlay,
-        multiPlay,
-      })
+      const {userId, googleId} = req.query;
+      if (userId) {
+        const user = await getUserById(Number(userId));
+        if (user) {
+          const singlePlay = await getSinglePlayByUserId(user.id);
+          const multiPlay = await getMultiPlayByUserId(Number(userId));
+          return res.json({
+            user,
+            singlePlay,
+            multiPlay,
+          })
+        } else {
+          return res.status(404).send('NO SUCH USER')
+        }
+      }
+
+      if (googleId) {
+        const user = await getUserByGoogleId(Number(userId));
+        if (user) {
+          const singlePlay = await getSinglePlayByUserId(user.id);
+          const multiPlay = await getMultiPlayByUserId(user.id);
+          return res.json({
+            user,
+            singlePlay,
+            multiPlay,
+          })
+        } else {
+          return res.status(404).send('NO SUCH USER')
+        }
+      }
+
+      return res.status(404).send('GOOGLEID OR USERID IS REQUIRED')
     },
     post: (req, res) => {
     }

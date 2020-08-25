@@ -10,6 +10,15 @@ export const getUserById = async (id: number) => {
   return user;
 }
 
+export const getUserByGoogleId = async (id: number) => {
+  const userRepo = getRepository(User);
+  const user = await userRepo
+    .createQueryBuilder("user")
+    .where("user.googleId = :id", {id})
+    .getOne();
+  return user;
+}
+
 export const setUserData = async (userId: number, option: Partial<User>) => {
   return await getConnection()
     .createQueryBuilder()
