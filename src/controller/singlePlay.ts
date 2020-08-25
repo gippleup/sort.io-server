@@ -10,10 +10,11 @@ type SinglePlayController = {
 
 const controller: SinglePlayController = {
   save: async (req, res) => {
-    const {difficulty, userId} = req.body;
+    const {difficulty, userId, createdAt} = req.body;
     const newData = new SinglePlay();
     newData.difficulty = Number(difficulty);
     newData.userId = Number(userId);
+    newData.createdAt = createdAt;
     const singlePlayRepo = getRepository(SinglePlay);
     try {
       const savedData = await singlePlayRepo.save(newData);

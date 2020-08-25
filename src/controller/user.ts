@@ -5,7 +5,7 @@ import { getUserById, setUserData } from "../utils/user";
 import { getSinglePlayByUserId } from "../utils/singlePlay";
 import { getMultiPlayByUserId } from "../utils/multiPlay";
 
-type UserControllerPureTypes = "signin" | "signout" | "delete";
+type UserControllerPureTypes = "signup" | "signin" | "signout" | "delete";
 type UserControllerDualTypes = "gold" | "playdata" | "ticket";
 
 type UserController = {
@@ -18,7 +18,7 @@ type UserController = {
 }
 
 const controller: UserController = {
-  signin: async (req, res) => {
+  signup: async (req, res) => {
     const {googleId, userId} = req.body;
     try {
       await getRepository(User)
@@ -27,11 +27,12 @@ const controller: UserController = {
       .set({googleId})
       .where("user.id = :id", {id: userId})
       .execute();
-      console.log(googleId, userId);
       res.end('ok')
     } catch (e) {
-      res.end('FALIED TO SIGN IN')
+      res.end('FALIED TO SIGN UP')
     }
+  },
+  signin: (req, res) => {
   },
   signout: (req, res) => {
   },
