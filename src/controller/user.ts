@@ -95,7 +95,7 @@ const controller: UserController = {
       }
 
       if (googleId) {
-        const user = await getUserByGoogleId(Number(userId));
+        const user = await getUserByGoogleId(Number(googleId));
         if (user) {
           const singlePlay = await getSinglePlayByUserId(user.id);
           const multiPlay = await getMultiPlayByUserId(user.id);
