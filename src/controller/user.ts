@@ -18,15 +18,16 @@ type UserController = {
 }
 
 const controller: UserController = {
-  signin: (req, res) => {
+  signin: async (req, res) => {
     const {googleId, userId} = req.body;
     try {
-      getRepository(User)
+      await getRepository(User)
       .createQueryBuilder("user")
       .update()
       .set({googleId})
       .where("user.id = :id", {id: userId})
       .execute();
+      console.log(googleId, userId);
       res.end('ok')
     } catch (e) {
       res.end('FALIED TO SIGN IN')
