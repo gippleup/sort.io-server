@@ -15,7 +15,6 @@ const controller: MatchController = {
       winner,
       difficulty,
       user1, user2,
-      isDraw,
       timeConsumed,
     } = req.body;
     if (winner !== user1 && winner !== user2) {
@@ -26,7 +25,6 @@ const controller: MatchController = {
     newData.user1 = Number(user1);
     newData.user2 = Number(user2);
     newData.winner = Number(winner);
-    newData.isDraw = isDraw;
     newData.timeConsumed = timeConsumed;
     const matchRepo = getRepository(Match);
     try {
