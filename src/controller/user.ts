@@ -128,7 +128,8 @@ const controller: UserController = {
         S.userId,
         S.difficulty,
         S.createdAt,
-        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC) as 'rank'
+        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC) as 'rank',
+        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC) / ${totalUser} as 'rate'
       FROM
         (SELECT
           single.userId,
@@ -152,7 +153,8 @@ const controller: UserController = {
           return {
             targetUser,
             beforeTargetUser: data.slice(Math.max(0, targetIndex - padding), targetIndex),
-            afterTargetUser: data.slice(targetIndex + 1, Math.min(data.length, targetIndex + 1 + padding))
+            afterTargetUser: data.slice(targetIndex + 1, Math.min(data.length, targetIndex + 1 + padding)),
+            total: totalUser
           };
         } else {
           return 'NO SUCH USER'
