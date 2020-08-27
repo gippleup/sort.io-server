@@ -124,8 +124,8 @@ const controller: UserController = {
     const userRank = await getConnection()
       .query(`
       SELECT
-        S.id,
         S.userId,
+        U.name,
         S.difficulty,
         S.createdAt,
         ROW_NUMBER() OVER (ORDER BY S.difficulty DESC) as 'rank',
@@ -137,6 +137,7 @@ const controller: UserController = {
         FROM single_play AS single
         GROUP BY single.userId) AS last_game
       INNER JOIN single_play AS S ON S.id = last_game.gameId
+      INNER JOIN user AS U ON U.id = S.userId
       ORDER BY S.difficulty DESC, S.createdAt DESC
       `).then((data) => {
         let targetUser;
