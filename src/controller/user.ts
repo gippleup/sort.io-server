@@ -128,8 +128,8 @@ const controller: UserController = {
         U.name,
         S.difficulty,
         S.createdAt,
-        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC) as 'rank',
-        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC) / ${totalUser} as 'rate'
+        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC, S.createdAt DESC) as 'rank',
+        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC, S.createdAt DESC) / ${totalUser} as 'rate'
       FROM
         (SELECT
           single.userId,
