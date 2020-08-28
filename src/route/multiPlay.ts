@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import controller from '../controller/match';
+import controller from '../controller/multiPlay';
 
 const router = Router();
 

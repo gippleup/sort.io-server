@@ -1,7 +1,7 @@
 import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn } from "typeorm";
 
 @Entity()
-export class Match {
+export class MultiPlay {
   @PrimaryGeneratedColumn()
   id!: number;
   
