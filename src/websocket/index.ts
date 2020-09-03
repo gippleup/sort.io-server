@@ -3,6 +3,7 @@ import { Socket } from "net";
 import url from "url";
 import { Request, Response } from 'express';
 import Ws from 'ws';
+import wsContoller from './routes/index';
 
 const wss = new Ws.Server({ noServer: true });
 export const handleUpgrade = (server: Server) => {
@@ -12,7 +13,10 @@ export const handleUpgrade = (server: Server) => {
       wss.handleUpgrade(req, socket, head, (ws) => {
         wss.emit('connection', ws, req);
         ws.on('message', (message) => {
-          ws.send(message)
+          wsContoller(message, ws, wss)
+        })
+        ws.on('close', (code, reason) => {
+          console.log(code, reason);
         })
       })
     }
