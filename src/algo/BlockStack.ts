@@ -2,7 +2,7 @@ type BlockStackProps = {
   limit: number, initialBlockState: number[]
 }
 
-class BlockStack {
+export class BlockStack {
   limit: number;
   stack: number[];
   constructor(option: BlockStackProps) {
@@ -17,7 +17,7 @@ class BlockStack {
       return false;
     }
   }
-  
+
   get isFull() {
     if (this.limit <= this.stack.length) {
       return true;
