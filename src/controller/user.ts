@@ -5,7 +5,7 @@ import { getUserById, setUserData, getUserByGoogleId } from "../utils/user";
 import { getSinglePlayByUserId } from "../utils/singlePlay";
 import { getMultiPlayByUserId } from "../utils/multiPlay";
 
-type UserControllerPureTypes = "signup" | "signin" | "signout" | "delete" | "rank";
+type UserControllerPureTypes = "signup" | "signin" | "signout" | "delete";
 type UserControllerDualTypes = "gold" | "playdata" | "ticket";
 
 type UserController = {
@@ -114,55 +114,6 @@ const controller: UserController = {
     post: (req, res) => {
     }
   },
-  rank: async (req, res) => {
-    const userId = Number(req.query.userId);
-    const padding = Number(req.query.padding || 3);
-    const userRepo = getRepository(User);
-    const totalUser = await userRepo
-      .createQueryBuilder("user")
-      .getCount();
-    const userRank = await getConnection()
-      .query(`
-      SELECT
-        S.userId,
-        U.name,
-        S.difficulty,
-        S.createdAt,
-        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC, S.createdAt DESC) as 'rank',
-        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC, S.createdAt DESC) / ${totalUser} as 'rate'
-      FROM
-        (SELECT
-          single.userId,
-          MAX(single.id) AS gameId
-        FROM single_play AS single
-        GROUP BY single.userId) AS last_game
-      INNER JOIN single_play AS S ON S.id = last_game.gameId
-      INNER JOIN user AS U ON U.id = S.userId
-      ORDER BY S.difficulty DESC, S.createdAt DESC
-      `).then((data) => {
-        let targetUser;
-        let targetIndex;
-        for (let i = 0; i < data.length; i += 1) {
-          const curRow = data[i];
-          if (curRow.userId === userId) {
-            targetUser = curRow;
-            targetIndex = i;
-            break;
-          }
-        }
-        if (targetIndex) {
-          return {
-            targetUser,
-            beforeTargetUser: data.slice(Math.max(0, targetIndex - padding), targetIndex),
-            afterTargetUser: data.slice(targetIndex + 1, Math.min(data.length, targetIndex + 1 + padding)),
-            total: totalUser
-          };
-        } else {
-          return 'NO SUCH USER'
-        }
-      })
-    res.send(userRank);
-  }
 }
 
 export default controller
