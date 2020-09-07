@@ -10,6 +10,7 @@ class Player {
   id: number;
   score: number = 0;
   isReady: boolean = false;
+  isPrepared: boolean = false;
   constructor(option: PlayerConstructor) {
     const {ws, id} = option;
     this.client = ws;

@@ -1,10 +1,12 @@
 import Ws from 'ws';
 import Player from "./Player";
 import generateMultiMap from "../utils/generateMultiMap";
-import { loadMap, syncTimer, alertDock } from '../../action/creator';
+import { syncTimer, alertDock, sendRoom, deleteRoom, alertPrepare, syncPrepareTimer } from '../../action/creator';
 import { MapOption } from '../../../algo/generateMap';
 import { getRepository } from 'typeorm';
 import { MultiPlay } from '../../../entity/MultiPlay';
+
+export type MapDesc = MapOption & { difficulty: number };
 
 class GameRoom {
   roomId: number | undefined;
@@ -12,19 +14,44 @@ class GameRoom {
   winner: number = -1;
   createdAt: string | undefined;
   map: number[][];
-  mapDesc: MapOption & {difficulty: number};
+  mapDesc: MapDesc;
   gameDuration: number = 120;
   interval: NodeJS.Timer | undefined;
   leftTime: number = this.gameDuration;
-  fps: number = 10;
+  leftPrepareTime: number = 3;
+  prepareTimer: NodeJS.Timer | undefined;
+  fps: number = 1;
   constructor(player1: Player, player2: Player) {
     this.players.push(player1, player2);
     this.createdAt = new Date(Date.now()).toUTCString();
-    const {question, desc} = generateMultiMap(1);
+    const {question, desc} = generateMultiMap(3); // TODO: set difficulty by comparing player1,2 level;
     this.map = question;
     this.mapDesc = desc;
     this.roomId = GameRoom.count;
     GameRoom.count += 1;
+
+    this.forEachClient = this.forEachClient.bind(this);
+    this.forEachPlayer = this.forEachPlayer.bind(this);
+    this.sendRoomData = this.sendRoomData.bind(this);
+    this.checkPlayerIsReady = this.checkPlayerIsReady.bind(this);
+    this.checkIfBothPlayerIsReady = this.checkIfBothPlayerIsReady.bind(this);
+    this.alertPrepare = this.alertPrepare.bind(this);
+    this.startPrepareTimer = this.startPrepareTimer.bind(this);
+    this.onPrepareTimerInterval = this.onPrepareTimerInterval.bind(this);
+    this.onPrepareTimerTimeout = this.onPrepareTimerTimeout.bind(this);
+    this.stopPrepareTimer = this.stopPrepareTimer.bind(this);
+    this.startGame = this.startGame.bind(this);
+    this.onTimeout = this.onTimeout.bind(this);
+    this.onTimerInterval = this.onTimerInterval.bind(this);
+    this.startTimer = this.startTimer.bind(this);
+    this.stopTimer = this.stopTimer.bind(this);
+    this.restartTimer = this.restartTimer.bind(this);
+    this.updateScore = this.updateScore.bind(this);
+    this.checkWinner = this.checkWinner.bind(this);
+    this.alertDockAction = this.alertDockAction.bind(this);
+    this.saveResult = this.saveResult.bind(this);
+    this.endGame = this.endGame.bind(this);
+    this.terminateConnections = this.terminateConnections.bind(this);
   }
 
   forEachPlayer(callback: (player: Player) => any) {
@@ -39,12 +66,34 @@ class GameRoom {
     })
   }
 
-  sendMap() {
-    const map = this.map;
-    if (!map) return;
+  sendRoomData() {
+    const {map, mapDesc, roomId} = this;
+    if (!map || !mapDesc || roomId === undefined) return;
     this.forEachClient((client) => {
-      client.send(loadMap(map));
+      client.send(sendRoom({
+        map,
+        mapDesc,
+        roomId,
+      }));
     })
+  }
+
+  checkPlayerIsPrepared(userId: number) {
+    this.forEachPlayer((player) => {
+      if (player.id === userId) {
+        player.isPrepared = true;
+      }
+    })
+  }
+
+  checkIfBothPlayerIsPrepared() {
+    let result = true;
+    this.forEachPlayer((player) => {
+      if (!player.isPrepared) {
+        result = false;
+      }
+    })
+    return result;
   }
 
   checkPlayerIsReady(userId: number) {
@@ -75,14 +124,46 @@ class GameRoom {
   }
 
   onTimerInterval() {
+    if (this.leftTime <= 0) {
+      this.onTimeout();
+    }
     this.forEachClient((client) => {
-      client.send(syncTimer(this.leftTime))
+      client.send(syncTimer(this.leftTime));
     })
 
     this.leftTime -= 1 / this.fps;
+  }
 
-    if (this.leftTime <= 0) {
-      this.onTimeout();
+  alertPrepare() {
+    this.forEachClient((client) => {
+      client.send(alertPrepare());
+    })
+  }
+
+  onPrepareTimerInterval(){
+    if (this.leftPrepareTime <= 0) {
+      this.onPrepareTimerTimeout();
+    }
+    this.forEachClient((client) => {
+      client.send(syncPrepareTimer(this.leftPrepareTime))
+    })
+
+    this.leftPrepareTime -= 1 / this.fps;
+  }
+
+  onPrepareTimerTimeout() {
+    this.stopPrepareTimer();
+    this.startGame();
+  }
+
+  startPrepareTimer() {
+    this.prepareTimer = setInterval(this.onPrepareTimerInterval, 1000 / this.fps)
+  }
+
+  stopPrepareTimer() {
+    if (this.prepareTimer !== undefined) {
+      clearInterval(this.prepareTimer);
+      this.prepareTimer = undefined;
     }
   }
 
@@ -92,7 +173,7 @@ class GameRoom {
   }
 
   stopTimer() {
-    if (this.interval) {
+    if (this.interval !== undefined) {
       clearInterval(this.interval);
       this.interval = undefined;
     }
@@ -110,13 +191,17 @@ class GameRoom {
     })
   }
 
-  checkWinner() {
-    let requiredScore = this.mapDesc.maxScore;
-    this.forEachPlayer((player) => {
-      if (!this.winner && player.score === requiredScore) {
-        this.winner = player.id;
-      }
-    })
+  checkWinner(winner?: number) {
+    if (winner) {
+      this.winner = winner;
+    } else {
+      let requiredScore = this.mapDesc.maxScore;
+      this.forEachPlayer((player) => {
+        if (!this.winner && player.score === requiredScore) {
+          this.winner = player.id;
+        }
+      })
+    }
     return this.winner;
   }
 
@@ -152,11 +237,11 @@ class GameRoom {
 
   endGame() {
     this.saveResult()
-    .then(this.terminateConnections);
   }
 
   terminateConnections() {
     this.forEachClient((client) => {
+      client.send(deleteRoom());
       client.terminate();
     })
   }
