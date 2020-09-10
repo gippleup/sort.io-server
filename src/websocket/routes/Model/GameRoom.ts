@@ -1,7 +1,7 @@
 import Ws from 'ws';
 import Player from "./Player";
 import generateMultiMap from "../utils/generateMultiMap";
-import { syncTimer, alertDock, sendRoom, deleteRoom, alertPrepare, syncPrepareTimer } from '../../action/creator';
+import * as socketAction from '../../action/creator';
 import { MapOption } from '../../../algo/generateMap';
 import { getRepository } from 'typeorm';
 import { MultiPlay } from '../../../entity/MultiPlay';
@@ -24,7 +24,7 @@ class GameRoom {
   constructor(player1: Player, player2: Player) {
     this.players.push(player1, player2);
     this.createdAt = new Date(Date.now()).toUTCString();
-    const {question, desc} = generateMultiMap(3); // TODO: set difficulty by comparing player1,2 level;
+    const {question, desc} = generateMultiMap(1); // TODO: set difficulty by comparing player1,2 level;
     this.map = question;
     this.mapDesc = desc;
     this.roomId = GameRoom.count;
@@ -48,6 +48,7 @@ class GameRoom {
     this.restartTimer = this.restartTimer.bind(this);
     this.updateScore = this.updateScore.bind(this);
     this.checkWinner = this.checkWinner.bind(this);
+    this.informWinner = this.informWinner.bind(this);
     this.alertDockAction = this.alertDockAction.bind(this);
     this.saveResult = this.saveResult.bind(this);
     this.endGame = this.endGame.bind(this);
@@ -70,7 +71,7 @@ class GameRoom {
     const {map, mapDesc, roomId} = this;
     if (!map || !mapDesc || roomId === undefined) return;
     this.forEachClient((client) => {
-      client.send(sendRoom({
+      client.send(socketAction.sendRoom({
         map,
         mapDesc,
         roomId,
@@ -128,7 +129,7 @@ class GameRoom {
       this.onTimeout();
     }
     this.forEachClient((client) => {
-      client.send(syncTimer(this.leftTime));
+      client.send(socketAction.syncTimer(this.leftTime));
     })
 
     this.leftTime -= 1 / this.fps;
@@ -136,7 +137,7 @@ class GameRoom {
 
   alertPrepare() {
     this.forEachClient((client) => {
-      client.send(alertPrepare());
+      client.send(socketAction.alertPrepare());
     })
   }
 
@@ -145,7 +146,7 @@ class GameRoom {
       this.onPrepareTimerTimeout();
     }
     this.forEachClient((client) => {
-      client.send(syncPrepareTimer(this.leftPrepareTime))
+      client.send(socketAction.syncPrepareTimer(this.leftPrepareTime))
     })
 
     this.leftPrepareTime -= 1 / this.fps;
@@ -206,12 +207,14 @@ class GameRoom {
   }
 
   alertDockAction(userId: number, stackIndex: number, action: 'DOCK' | 'UNDOCK') {
-    this.forEachClient((client) => {
-      client.send(alertDock({
-        userId,
-        stackIndex,
-        action,
-      }))
+    this.forEachPlayer((player) => {
+      if (player.id !== userId) {
+        player.client.send(socketAction.alertDock({
+          userId,
+          stackIndex,
+          action,
+        }))
+      }
     })
   }
 
@@ -235,13 +238,19 @@ class GameRoom {
     })
   }
 
+  informWinner() {
+    this.forEachClient((client) => {
+      client.send(socketAction.informWinner(this.winner))
+    })
+  }
+
   endGame() {
     this.saveResult()
   }
 
   terminateConnections() {
     this.forEachClient((client) => {
-      client.send(deleteRoom());
+      client.send(socketAction.deleteRoom());
       client.terminate();
     })
   }

@@ -94,3 +94,4 @@ export type SocketClientMessages =
   | ExitMessage
   | ReadyMessage
   | AlertPrepared
+  | SuccessMessage

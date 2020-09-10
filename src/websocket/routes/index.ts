@@ -14,8 +14,6 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   if (typeof message !== "string") return;
 
   const parsedMessage: SocketMessage = JSON.parse(message);
-  console.log(parsedMessage);
-  console.log(waitingLine.line.length, Object.keys(rooms).length)
   if (parsedMessage.type === MessageTypes.ENTER) {
     const {userId} = parsedMessage.payload;
     const newPlayer = new Player({
@@ -76,12 +74,30 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
     const gameRoom = rooms[roomId];
     let winner = -1;
     gameRoom?.forEachPlayer((player) => {
-      if (player.id !== userId) {
+      if (player.id !== userId && gameRoom.gameDuration - gameRoom.leftTime >= 30) {
         winner = userId;
+      } else if (player.id === userId) {
+        player.hasLeftGame = true;
+      }
+    });
+
+    if (winner !== -1) {
+      gameRoom?.checkWinner(winner);
+    }
+
+    let bothLeft = true;
+    gameRoom?.forEachPlayer((player) => {
+      if (!player.hasLeftGame) {
+        bothLeft = false;
       }
     })
-    gameRoom?.checkWinner(winner)
+    
     gameRoom?.endGame();
+
+    if (bothLeft) {
+      gameRoom?.terminateConnections();
+      delete rooms[roomId];
+    }
   }
 
   if (parsedMessage.type === MessageTypes.ALERT_READY) {
@@ -103,6 +119,18 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
       gameRoom?.startPrepareTimer();
     }
   }
+
+  if (parsedMessage.type === MessageTypes.SUCCESS) {
+    const {userId, roomId} = parsedMessage.payload;
+    const gameRoom = rooms[roomId];
+    gameRoom?.checkWinner(userId);
+    gameRoom?.informWinner();
+    gameRoom?.stopTimer();
+  }
+
+  console.log(parsedMessage);
+  // console.log(waitingLine);
+  // console.log(rooms);
 }
 
 export default baseController;

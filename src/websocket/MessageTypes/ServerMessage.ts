@@ -6,7 +6,8 @@ export enum SocketServerMessageTypes {
   ALERT_DOCK = 'ALERT_DOCK',
   DELETE_ROOM = 'DELETE_ROOM',
   ALERT_PREPARE = 'ALERT_PREPARE',
-  SYNC_PREPARE_TIMER = 'SYNC_PREPARE_TIMER'
+  SYNC_PREPARE_TIMER = 'SYNC_PREPARE_TIMER',
+  INFORM_WINNER = 'INFORM_WINNER',
 }
 
 export type SyncTimerMessage = {
@@ -51,6 +52,13 @@ export type SyncPrepareTimer = {
   }
 }
 
+export type InformWinner = {
+  type: SocketServerMessageTypes.INFORM_WINNER;
+  payload: {
+    winner: number;
+  }
+}
+
 export type SocketServerMessages =
   SyncTimerMessage
   | SendRoomMessage
@@ -58,3 +66,4 @@ export type SocketServerMessages =
   | DeleteRoom
   | AlertPrepare
   | SyncPrepareTimer
+  | InformWinner

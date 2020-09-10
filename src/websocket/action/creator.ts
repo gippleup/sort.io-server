@@ -45,3 +45,10 @@ export const syncPrepareTimer = (leftTime: number) => JSON.stringify({
     leftTime,
   }
 })
+
+export const informWinner = (winner: number) => JSON.stringify({
+  type: SocketServerMessageTypes.INFORM_WINNER,
+  payload: {
+    winner,
+  }
+})
