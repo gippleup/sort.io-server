@@ -23,8 +23,6 @@ router.post('/signin', controller.signin)
 router.get('/signout', controller.signout)
 router.get('/delete', controller.delete)
 
-router.get('/rank', controller.rank);
-
 router.use('/guest', guestRouter);
 
 export default router;

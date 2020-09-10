@@ -1,9 +1,11 @@
 import { ExpressController } from "./types"
 import { SinglePlay } from "../entity/SinglePlay"
-import { getRepository, createQueryBuilder } from "typeorm";
+import { getRepository, createQueryBuilder, getConnection } from "typeorm";
 import { MultiPlay } from "../entity/MultiPlay";
+import { User } from "../entity/User";
+import { getMultiPlayRankByUserId } from "../utils/multiPlay";
 
-type MultiPlayControllerTypes = "save";
+type MultiPlayControllerTypes = "save" | "rank";
 
 type MultiPlayController = {
   [T in MultiPlayControllerTypes]: ExpressController;
@@ -33,6 +35,12 @@ const controller: MultiPlayController = {
     } catch (e) {
       res.send(e);
     }
+  },
+  rank: async (req, res) => {
+    const userId = Number(req.query.userId);
+    const padding = Number(req.query.padding || 3);
+    const userRank = await getMultiPlayRankByUserId(userId, padding);
+    res.send(userRank);
   }
 }
 
