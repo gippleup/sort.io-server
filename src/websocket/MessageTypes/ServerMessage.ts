@@ -8,6 +8,11 @@ export enum SocketServerMessageTypes {
   ALERT_PREPARE = 'ALERT_PREPARE',
   SYNC_PREPARE_TIMER = 'SYNC_PREPARE_TIMER',
   INFORM_WINNER = 'INFORM_WINNER',
+  ASK_REMATCH = 'ASK_REMATCH',
+  CANCEL_REMATCH_ASK = 'CANCEL_REMATCH_ASK',
+  ALERT_REMATCH_DECLINED = 'ALERT_REMATCH_DECLINED',
+  INFORM_REMATCH_ACCEPTED = 'INFORM_REMATCH_ACCEPTED',
+  INFORM_PREPARE_REMATCH = 'INFORM_PREPARE_REMATCH',
 }
 
 export type SyncTimerMessage = {
@@ -23,6 +28,10 @@ export type SendRoomMessage = {
     map: number[][];
     mapDesc: MapDesc;
     roomId: number;
+    playerData: {
+      name: string;
+      id: number;
+    }[];
   }
 }
 
@@ -59,6 +68,26 @@ export type InformWinner = {
   }
 }
 
+export type AskRematch = {
+  type: SocketServerMessageTypes.ASK_REMATCH,
+}
+
+export type CancelRematchAsk = {
+  type: SocketServerMessageTypes.CANCEL_REMATCH_ASK,
+}
+
+export type AlertRematchDeclined = {
+  type: SocketServerMessageTypes.ALERT_REMATCH_DECLINED,
+}
+
+export type InformRematchAccepted = {
+  type: SocketServerMessageTypes.INFORM_REMATCH_ACCEPTED,
+}
+
+export type InformPrepareRematch = {
+  type: SocketServerMessageTypes.INFORM_PREPARE_REMATCH,
+}
+
 export type SocketServerMessages =
   SyncTimerMessage
   | SendRoomMessage
@@ -67,3 +96,8 @@ export type SocketServerMessages =
   | AlertPrepare
   | SyncPrepareTimer
   | InformWinner
+  | AskRematch
+  | CancelRematchAsk
+  | AlertRematchDeclined
+  | InformRematchAccepted
+  | InformPrepareRematch
