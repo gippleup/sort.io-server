@@ -20,6 +20,15 @@ class Player {
     this.client = ws;
     this.id = id;
     this.name = name;
+
+    this.reset = this.reset.bind(this);
+  }
+
+  reset() {
+    this.isPrepared = false;
+    this.isReady = false;
+    this.receivedMap = false;
+    this.score = 0;
   }
 }
 

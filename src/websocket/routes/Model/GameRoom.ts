@@ -47,6 +47,7 @@ class GameRoom {
     this.stopTimer = this.stopTimer.bind(this);
     this.restartTimer = this.restartTimer.bind(this);
     this.resetTimers = this.resetTimers.bind(this);
+    this.resetGameRoom = this.resetGameRoom.bind(this);
     this.updateScore = this.updateScore.bind(this);
     this.checkWinner = this.checkWinner.bind(this);
     this.informWinner = this.informWinner.bind(this);
@@ -233,6 +234,12 @@ class GameRoom {
     this.stopPrepareTimer();
     this.leftTime = this.gameDuration;
     this.leftPrepareTime = 3;
+  }
+
+  resetGameRoom() {
+    this.resetTimers();
+    this.winner = -1;
+    this.players.forEach((player) => player.reset())
   }
 
   restartTimer() {

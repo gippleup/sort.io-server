@@ -190,7 +190,7 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
 
     if (recipient !== -1) {
       gameRoom?.informRematchAccepted(recipient);
-      gameRoom?.resetTimers();
+      gameRoom?.resetGameRoom();
       gameRoom?.generateMap()
       .then(() => {
         gameRoom.sendRoomData();
