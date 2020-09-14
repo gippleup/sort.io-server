@@ -15,10 +15,11 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
 
   const parsedMessage: SocketMessage = JSON.parse(message);
   if (parsedMessage.type === MessageTypes.ENTER) {
-    const {userId} = parsedMessage.payload;
+    const {userId, name} = parsedMessage.payload;
     const newPlayer = new Player({
       id: userId,
       ws,
+      name,
     })
 
     await waitingLine
@@ -27,10 +28,13 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
       .then((players) => {
         const [player1, player2] = players;
         const gameRoom = new GameRoom(player1, player2);
-        if (gameRoom.roomId !== undefined) {
-          rooms[gameRoom.roomId] = gameRoom;
-          gameRoom.sendRoomData();
-        }
+        gameRoom.generateMap()
+        .then(() => {
+          if (gameRoom.roomId !== undefined) {
+            rooms[gameRoom.roomId] = gameRoom;
+            gameRoom.sendRoomData();
+          }
+        })
       })
       .catch(() => {});
   }
@@ -126,6 +130,100 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
     gameRoom?.checkWinner(userId);
     gameRoom?.informWinner();
     gameRoom?.stopTimer();
+  }
+
+  if (parsedMessage.type === MessageTypes.REQUEST_REMATCH) {
+    const { userId, roomId } = parsedMessage.payload;
+    const gameRoom = rooms[roomId];
+    let recipient = -1;
+    gameRoom?.forEachPlayer((player) => {
+      if (player.id !== userId) {
+        recipient = player.id;
+      }
+    })
+
+    if (recipient !== -1) {
+      gameRoom?.askRematch(recipient);
+    }
+  }
+
+  if (parsedMessage.type === MessageTypes.CANCEL_REQUEST_REMATCH) {
+    const { userId, roomId } = parsedMessage.payload;
+    const gameRoom = rooms[roomId];
+    let recipient = -1;
+    gameRoom?.forEachPlayer((player) => {
+      if (player.id !== userId) {
+        recipient = player.id;
+      }
+    })
+
+    if (recipient !== -1) {
+      gameRoom?.cancelRematchAsk(recipient);
+    }
+  }
+
+  if (parsedMessage.type === MessageTypes.DECLINE_REQUEST_REMATCH) {
+    const { userId, roomId } = parsedMessage.payload;
+    const gameRoom = rooms[roomId];
+    let recipient = -1;
+    gameRoom?.forEachPlayer((player) => {
+      if (player.id !== userId) {
+        recipient = player.id;
+      }
+    })
+
+    if (recipient !== -1) {
+      gameRoom?.alertRematchDeclined(recipient);
+    }
+  }
+
+  if (parsedMessage.type === MessageTypes.ACCEPT_REMATCH) {
+    const { userId, roomId } = parsedMessage.payload;
+    const gameRoom = rooms[roomId];
+    let recipient = -1;
+    gameRoom?.forEachPlayer((player) => {
+      player.receivedMap = false;
+      if (player.id !== userId) {
+        recipient = player.id;
+      }
+    })
+
+    if (recipient !== -1) {
+      gameRoom?.informRematchAccepted(recipient);
+      gameRoom?.resetTimers();
+      gameRoom?.generateMap()
+      .then(() => {
+        gameRoom.sendRoomData();
+      });
+    }
+  }
+
+  if (parsedMessage.type === MessageTypes.INFORM_RECEIVED_MAP) {
+    const { userId, roomId } = parsedMessage.payload;
+    const gameRoom = rooms[roomId];
+    let bothReceivedMap = true;
+    gameRoom?.forEachPlayer((player) => {
+      if (player.id === userId) {
+        player.receivedMap = true;
+      }
+      if (!player.receivedMap) {
+        bothReceivedMap = false;
+      }
+    })
+
+    if (bothReceivedMap) {
+      gameRoom?.informPrepareRematch();
+    }
+  }
+
+  if (parsedMessage.type === MessageTypes.REQUEST_OTHERMATCH) {
+    const { userId, roomId } = parsedMessage.payload;
+    const gameRoom = rooms[roomId];
+  }
+
+  if (parsedMessage.type === MessageTypes.CANCEL_REQUEST_OTHERMATCH) {
+    const { userId, roomId } = parsedMessage.payload;
+    const gameRoom = rooms[roomId];
   }
 
   console.log(parsedMessage);
