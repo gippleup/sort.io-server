@@ -2,16 +2,15 @@ import { MapDesc } from '../routes/Model/GameRoom';
 import { SocketServerMessageTypes } from '../MessageTypes/ServerMessage';
 
 type SendRoomParams = {
-  map: number[][], mapDesc: MapDesc, roomId: number;
+  map: number[][],
+  mapDesc: MapDesc,
+  roomId: number;
+  playerData: {id: number, name: string}[];
 }
 
 export const sendRoom = (param: SendRoomParams) => JSON.stringify({
   type: SocketServerMessageTypes.SEND_ROOM,
-  payload: {
-    map: param.map,
-    mapDesc: param.mapDesc,
-    roomId: param.roomId,
-  }
+  payload: param,
 })
 
 export const syncTimer = (leftTime: number) => JSON.stringify({
@@ -51,4 +50,24 @@ export const informWinner = (winner: number) => JSON.stringify({
   payload: {
     winner,
   }
+})
+
+export const askRematch = () => JSON.stringify({
+  type: SocketServerMessageTypes.ASK_REMATCH,
+})
+
+export const cancelRematchAsk = () => JSON.stringify({
+  type: SocketServerMessageTypes.CANCEL_REMATCH_ASK
+})
+
+export const alertRematchDeclined = () => JSON.stringify({
+  type: SocketServerMessageTypes.ALERT_REMATCH_DECLINED,
+})
+
+export const informRematchAccepted = () => JSON.stringify({
+  type: SocketServerMessageTypes.INFORM_REMATCH_ACCEPTED,
+})
+
+export const informPrepareRematch = () => JSON.stringify({
+  type: SocketServerMessageTypes.INFORM_PREPARE_REMATCH,
 })
