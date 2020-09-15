@@ -12,9 +12,9 @@ export const getMultiPlayByUserId = (id: number) => {
 }
 
 type RawMultiPlayRankData = {
-  userId: number,
+  id: number,
   name: string,
-  userCreatedAt: string,
+  createdAt: string,
   win: string,
   draw: string,
   lose: string,
@@ -26,9 +26,9 @@ type RawMultiPlayRankData = {
 }
 
 type ConvertedMultiPlayRankData = {
-  userId: number,
+  id: number,
   name: string,
-  userCreatedAt: string,
+  createdAt: string,
   win: number,
   draw: number,
   lose: number,
@@ -72,7 +72,7 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
         user.createdAt as userCreatedAt,
         multi.winner
       FROM
-        user INNER JOIN multi_play as multi
+        user LEFT JOIN multi_play as multi
         ON multi.user1 = user.id OR multi.user2 = user.id) AS playRecord
     ${conditionQuery[type]}
     GROUP BY playRecord.userid
@@ -100,38 +100,52 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
   const userRank = getConnection().query(`
   SELECT
       *,
-      @rank := ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.userCreatedAt DESC) AS 'rank',
-      ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.userCreatedAt DESC) / ${totalUser} AS 'rate'
-    FROM
-      (SELECT
-        ${targetValues}
-      FROM (${winTableQuery}) AS t1
-        LEFT JOIN (${drawTableQuery}) AS t2 ON t1.userId = t2.userId
-        LEFT JOIN (${loseTableQuery}) AS t3 ON t1.userId = t3.userId
-      UNION ALL
-      SELECT
-        ${targetValues}
-      FROM (${drawTableQuery}) AS t2
-        LEFT JOIN (${winTableQuery}) AS t1 ON t2.userId = t1.userId
-        LEFT JOIN (${loseTableQuery}) AS t3 ON t2.userId = t3.userId
-      WHERE t1.userId IS NULL
-      UNION ALL
-      SELECT
-        ${targetValues}
-      FROM (${loseTableQuery}) AS t3
-        LEFT JOIN (${winTableQuery}) AS t1 ON t3.userId = t1.userId
-        LEFT JOIN (${drawTableQuery}) AS t2 ON t3.userId = t2.userId
-      WHERE t1.userId IS NULL AND t2.userId IS NULL
+      @rank := ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt DESC) AS 'rank',
+      ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt DESC) / ${totalUser} AS 'rate'
+  FROM
+    (SELECT
+      user.id,
+      user.name,
+      user.createdAt,
+      IFNULL(multiGameRecord.win, 0) as win,
+      IFNULL(multiGameRecord.draw, 0) as draw,
+      IFNULL(multiGameRecord.lose, 0) as lose,
+      IFNULL(multiGameRecord.total, 0) as total,
+      IFNULL(multiGameRecord.winningRate, 0) as winningRate,
+      IFNULL(multiGameRecord.KBI, 0) as KBI
+    FROM user
+      LEFT JOIN
+        (SELECT
+          ${targetValues}
+        FROM (${winTableQuery}) AS t1
+          LEFT JOIN (${drawTableQuery}) AS t2 ON t1.userId = t2.userId
+          LEFT JOIN (${loseTableQuery}) AS t3 ON t1.userId = t3.userId
+        UNION ALL
+        SELECT
+          ${targetValues}
+        FROM (${drawTableQuery}) AS t2
+          LEFT JOIN (${winTableQuery}) AS t1 ON t2.userId = t1.userId
+          LEFT JOIN (${loseTableQuery}) AS t3 ON t2.userId = t3.userId
+        WHERE t1.userId IS NULL
+        UNION ALL
+        SELECT
+          ${targetValues}
+        FROM (${loseTableQuery}) AS t3
+          LEFT JOIN (${winTableQuery}) AS t1 ON t3.userId = t1.userId
+          LEFT JOIN (${drawTableQuery}) AS t2 ON t3.userId = t2.userId
+        WHERE t1.userId IS NULL AND t2.userId IS NULL
+        ) AS multiGameRecord
+      ON user.id = multiGameRecord.userId
       ) AS record
-
-    ORDER BY record.KBI DESC
+  ORDER BY 'rank' DESC
   `).then((data: RawMultiPlayRankData[]) => {
+    console.log(data)
     const convertedData: ConvertedMultiPlayRankData[] = data.map((row) => {
-      const {KBI, draw, lose, name, rank, rate, total, userCreatedAt, userId, win, winningRate} = row;
+      const {KBI, draw, lose, name, rank, rate, total, createdAt, id, win, winningRate} = row;
       return {
-        userId,
+        id,
         name,
-        userCreatedAt,
+        createdAt,
         win: Number(win),
         draw: Number(draw),
         lose: Number(lose),
@@ -146,7 +160,7 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
     let targetIndex;
     for (let i = 0; i < convertedData.length; i += 1) {
       const curRow = convertedData[i];
-      if (curRow.userId === id) {
+      if (curRow.id === id) {
         targetUser = curRow;
         targetIndex = i;
         break;
