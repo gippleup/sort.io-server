@@ -56,6 +56,10 @@ export const askRematch = () => JSON.stringify({
   type: SocketServerMessageTypes.ASK_REMATCH,
 })
 
+export const allowInformRematchRequest = () => JSON.stringify({
+  type: SocketServerMessageTypes.ALLOW_INFORM_REMATCH_REQUEST,
+})
+
 export const cancelRematchAsk = () => JSON.stringify({
   type: SocketServerMessageTypes.CANCEL_REMATCH_ASK
 })

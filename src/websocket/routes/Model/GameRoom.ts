@@ -22,6 +22,7 @@ class GameRoom {
   leftPrepareTime: number = 3;
   prepareTimer: NodeJS.Timer | undefined;
   fps: number = 1;
+  rematchRequestOngoing: boolean = false;
   constructor (player1: Player, player2: Player) {
     this.players.push(player1, player2);
     this.createdAt = new Date(Date.now()).toUTCString();
@@ -240,6 +241,7 @@ class GameRoom {
     this.resetTimers();
     this.winner = -1;
     this.players.forEach((player) => player.reset())
+    this.rematchRequestOngoing = false;
   }
 
   restartTimer() {
@@ -315,20 +317,37 @@ class GameRoom {
     })
   }
 
+  allowInformRematchRequest(userId: number) {
+    if (!this.rematchRequestOngoing) {
+      this.forEachPlayer((player) => {
+        if (player.id === userId) {
+          player.client.send(socketAction.allowInformRematchRequest())
+          this.rematchRequestOngoing = true;
+        }
+      })
+    }
+  }
+
   cancelRematchAsk(userId: number) {
-    this.forEachPlayer((player) => {
-      if (player.id === userId) {
-        player.client.send(socketAction.cancelRematchAsk())
-      }
-    })
+    if (this.rematchRequestOngoing) {
+      this.forEachPlayer((player) => {
+        if (player.id === userId) {
+          player.client.send(socketAction.cancelRematchAsk());
+          this.rematchRequestOngoing = false;
+        }
+      })
+    }
   }
 
   alertRematchDeclined(userId: number) {
-    this.forEachPlayer((player) => {
-      if (player.id === userId) {
-        player.client.send(socketAction.alertRematchDeclined())
-      }
-    })
+    if (this.rematchRequestOngoing) {
+      this.forEachPlayer((player) => {
+        if (player.id === userId) {
+          player.client.send(socketAction.alertRematchDeclined());
+          this.rematchRequestOngoing = false;
+        }
+      })
+    }
   }
 
   informRematchAccepted(userId: number) {

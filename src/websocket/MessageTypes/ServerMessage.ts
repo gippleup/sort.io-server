@@ -9,6 +9,7 @@ export enum SocketServerMessageTypes {
   SYNC_PREPARE_TIMER = 'SYNC_PREPARE_TIMER',
   INFORM_WINNER = 'INFORM_WINNER',
   ASK_REMATCH = 'ASK_REMATCH',
+  ALLOW_INFORM_REMATCH_REQUEST = 'ALLOW_INFORM_REMATCH_REQUEST',
   CANCEL_REMATCH_ASK = 'CANCEL_REMATCH_ASK',
   ALERT_REMATCH_DECLINED = 'ALERT_REMATCH_DECLINED',
   INFORM_REMATCH_ACCEPTED = 'INFORM_REMATCH_ACCEPTED',
@@ -72,6 +73,10 @@ export type AskRematch = {
   type: SocketServerMessageTypes.ASK_REMATCH,
 }
 
+export type AllowInformRematchRequest = {
+  type: SocketServerMessageTypes.ALLOW_INFORM_REMATCH_REQUEST,
+}
+
 export type CancelRematchAsk = {
   type: SocketServerMessageTypes.CANCEL_REMATCH_ASK,
 }
@@ -97,6 +102,7 @@ export type SocketServerMessages =
   | SyncPrepareTimer
   | InformWinner
   | AskRematch
+  | AllowInformRematchRequest
   | CancelRematchAsk
   | AlertRematchDeclined
   | InformRematchAccepted

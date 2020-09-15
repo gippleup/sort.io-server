@@ -136,11 +136,15 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
     const { userId, roomId } = parsedMessage.payload;
     const gameRoom = rooms[roomId];
     let recipient = -1;
-    gameRoom?.forEachPlayer((player) => {
-      if (player.id !== userId) {
-        recipient = player.id;
-      }
-    })
+    if (!gameRoom?.rematchRequestOngoing) {
+      gameRoom?.forEachPlayer((player) => {
+        if (player.id !== userId) {
+          recipient = player.id;
+        } else {
+          gameRoom.allowInformRematchRequest(player.id);
+        }
+      })
+    }
 
     if (recipient !== -1) {
       gameRoom?.askRematch(recipient);
