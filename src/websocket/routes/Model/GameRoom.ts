@@ -49,7 +49,9 @@ class GameRoom {
     this.forEachPlayer = this.forEachPlayer.bind(this);
     this.sendRoomData = this.sendRoomData.bind(this);
     this.killPlayerIfNoResponseAfter = this.killPlayerIfNoResponseAfter.bind(this);
-    this.checkPlayerIsReady = this.checkPlayerIsReady.bind(this);
+    this.checkPlayerAsPrepared = this.checkPlayerAsPrepared.bind(this);
+    this.checkPlayerAsLeft = this.checkPlayerAsLeft.bind(this);
+    this.checkPlayerAsReady = this.checkPlayerAsReady.bind(this);
     this.checkIfBothPlayerIsReady = this.checkIfBothPlayerIsReady.bind(this);
     this.alertPrepare = this.alertPrepare.bind(this);
     this.startPrepareTimer = this.startPrepareTimer.bind(this);
@@ -73,7 +75,13 @@ class GameRoom {
     this.alertDockAction = this.alertDockAction.bind(this);
     this.saveResult = this.saveResult.bind(this);
     this.endGame = this.endGame.bind(this);
+    this.getPlayer = this.getPlayer.bind(this);
+    this.getOpponent = this.getOpponent.bind(this);
     this.terminateConnections = this.terminateConnections.bind(this);
+  }
+
+  deleteSelf() {
+    delete rooms[this.roomId];
   }
 
   async decideDiffiulty() {
@@ -144,35 +152,26 @@ class GameRoom {
     })
   }
 
-  checkPlayerIsPrepared(userId: number) {
-    this.forEachPlayer((player) => {
-      if (player.id === userId) {
-        player.isPrepared = true;
-      }
-    })
-
+  checkPlayerAsPrepared(userId: number) {
+    this.getPlayer(userId).isPrepared = true;
     this.killPlayerIfNoResponseAfter(userId);
   }
 
-
-  checkPlayerIsReady(userId: number) {
-    this.forEachPlayer((player) => {
-      if (player.id === userId) {
-        player.isReady = true;
-      }
-    })
-
+  checkPlayerAsReady(userId: number) {
+    this.getPlayer(userId).isReady = true;
     this.killPlayerIfNoResponseAfter(userId);
+  }
+
+  checkPlayerAsLeft(userId: number) {
+    this.getPlayer(userId).hasLeftGame = true;
   }
 
   killPlayerIfNoResponseAfter(userId: number, ms: number = 10000) {
-    this.forEachPlayer((player) => {
-      if (player.id !== userId) return;
-      player.killIfNoResponseAfter(ms, (id) => {
-        player.hasLeftGame = true;
-        const opponent = this.players.filter((P) => P.id !== id)[0];
-        this.informOpponentHasLeft(opponent.id);
-      })
+    const player = this.getPlayer(userId);
+    player.killIfNoResponseAfter(ms, (id) => {
+      player.hasLeftGame = true;
+      const opponent = this.players.filter((P) => P.id !== id)[0];
+      this.informOpponentHasLeft(opponent.id);
     })
   }
 
@@ -281,19 +280,12 @@ class GameRoom {
   }
 
   updateScore(userId: number, newScore: number) {
-    this.forEachPlayer((player) => {
-      if (player.id === userId) {
-        player.score = newScore
-      }
-    })
+    this.getPlayer(userId).score = newScore;
   }
 
   informOpponentHasLeft(userId: number) {
-    this.forEachPlayer((player) => {
-      if (player.id === userId) {
-        player.client.send(socketAction.informOpponentHasLeft())
-      }
-    })
+    const message = socketAction.informOpponentHasLeft();
+    this.getPlayer(userId).client.send(message)
   }
 
   checkWinner(winner?: number) {
@@ -311,15 +303,12 @@ class GameRoom {
   }
 
   alertDockAction(userId: number, stackIndex: number, action: 'DOCK' | 'UNDOCK') {
-    this.forEachPlayer((player) => {
-      if (player.id !== userId) {
-        player.client.send(socketAction.alertDock({
-          userId,
-          stackIndex,
-          action,
-        }))
-      }
-    })
+    const message = socketAction.alertDock({
+      userId,
+      stackIndex,
+      action,
+    });
+    this.getOpponent(userId).client.send(message);
   }
 
   saveResult() {
@@ -350,52 +339,37 @@ class GameRoom {
   }
 
   askRematch(userId: number) {
-    this.forEachPlayer((player) => {
-      if (player.id === userId) {
-        player.client.send(socketAction.askRematch())
-      }
-    })
+    const message = socketAction.askRematch();
+    this.getPlayer(userId).client.send(message);
   }
 
   allowInformRematchRequest(userId: number) {
     if (!this.rematchRequestOngoing) {
-      this.forEachPlayer((player) => {
-        if (player.id === userId) {
-          player.client.send(socketAction.allowInformRematchRequest())
-          this.rematchRequestOngoing = true;
-        }
-      })
+      const message = socketAction.allowInformRematchRequest();
+      this.getPlayer(userId).client.send(message);
+      this.rematchRequestOngoing = true;
     }
   }
 
   cancelRematchAsk(userId: number) {
     if (this.rematchRequestOngoing) {
-      this.forEachPlayer((player) => {
-        if (player.id === userId) {
-          player.client.send(socketAction.cancelRematchAsk());
-          this.rematchRequestOngoing = false;
-        }
-      })
+      const message = socketAction.cancelRematchAsk();
+      this.getPlayer(userId).client.send(message);
+      this.rematchRequestOngoing = false;
     }
   }
 
   alertRematchDeclined(userId: number) {
     if (this.rematchRequestOngoing) {
-      this.forEachPlayer((player) => {
-        if (player.id === userId) {
-          player.client.send(socketAction.alertRematchDeclined());
-          this.rematchRequestOngoing = false;
-        }
-      })
+      const message = socketAction.alertRematchDeclined();
+      this.getPlayer(userId).client.send(message);
+      this.rematchRequestOngoing = false;
     }
   }
 
   informRematchAccepted(userId: number) {
-    this.forEachPlayer((player) => {
-      if (player.id === userId) {
-        player.client.send(socketAction.informRematchAccepted());
-      }
-    })
+    const message = socketAction.informRematchAccepted();
+    this.getPlayer(userId).client.send(message);
   }
 
   informPrepareRematch() {
@@ -421,6 +395,11 @@ class GameRoom {
   getPlayer(userId: number) {
     let player = this.players.filter((player) => player.id === userId);
     return player[0];
+  }
+
+  getOpponent(userId: number) {
+    let opponent = this.players.filter((player) => player.id !== userId);
+    return opponent[0];
   }
 
   terminateConnections() {
