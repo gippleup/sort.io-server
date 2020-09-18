@@ -3,6 +3,7 @@ import { MapDesc } from "../routes/Model/GameRoom"
 export enum SocketServerMessageTypes {
   SYNC_TIMER = 'SYNC_TIMER',
   SEND_ROOM = 'SEND_ROOM',
+  INFORM_OPPONENT_HAS_LEFT = 'OPPONENT_HAS_LEFT',
   ALERT_DOCK = 'ALERT_DOCK',
   DELETE_ROOM = 'DELETE_ROOM',
   ALERT_PREPARE = 'ALERT_PREPARE',
@@ -34,6 +35,10 @@ export type SendRoomMessage = {
       id: number;
     }[];
   }
+}
+
+export type InformOpponentHasLeft = {
+  type: SocketServerMessageTypes.INFORM_OPPONENT_HAS_LEFT,
 }
 
 export type AlertDockConstructor = {
@@ -96,6 +101,7 @@ export type InformPrepareRematch = {
 export type SocketServerMessages =
   SyncTimerMessage
   | SendRoomMessage
+  | InformOpponentHasLeft
   | AlertDockMessage
   | DeleteRoom
   | AlertPrepare

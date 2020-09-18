@@ -7,8 +7,8 @@ import WaitingLine from './Model/WaitingLine';
 import Player from './Model/Player';
 import GameRoom from './Model/GameRoom';
 
-const waitingLine = new WaitingLine();
-const rooms: {[index: number]: GameRoom | undefined} = {};
+export const waitingLine = new WaitingLine();
+export const rooms: {[index: number]: GameRoom | undefined} = {};
 
 const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   if (typeof message !== "string") return;
@@ -76,27 +76,35 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   if (parsedMessage.type === MessageTypes.EXIT) {
     const {roomId, userId} = parsedMessage.payload;
     const gameRoom = rooms[roomId];
-    let winner = -1;
-    gameRoom?.forEachPlayer((player) => {
-      if (player.id !== userId && gameRoom.gameDuration - gameRoom.leftTime >= 30) {
-        winner = userId;
-      } else if (player.id === userId) {
-        player.hasLeftGame = true;
-      }
-    });
+    let noOneLeftGameBefore = true;
 
-    if (winner !== -1) {
-      gameRoom?.checkWinner(winner);
-    }
-
-    let bothLeft = true;
     gameRoom?.forEachPlayer((player) => {
-      if (!player.hasLeftGame) {
-        bothLeft = false;
+      if (player.hasLeftGame) {
+        noOneLeftGameBefore = false;
       }
     })
-    
-    gameRoom?.endGame();
+
+    gameRoom?.forEachPlayer((player) => {
+      if (player.id === userId) {
+        player.hasLeftGame = true;
+      }
+    })
+
+    if (noOneLeftGameBefore) {
+      gameRoom?.stopTimer();
+      gameRoom?.stopPrepareTimer();
+      const opponent = gameRoom?.players.filter((P) => P.id !== userId)[0];
+      const passedGoodTime = (gameRoom?.gameDuration || 0) - (gameRoom?.leftTime || 0) >= 30;
+      if (opponent) {
+        gameRoom?.informOpponentHasLeft(opponent.id);
+        if (passedGoodTime) {
+          gameRoom?.checkWinner(opponent.id);
+          gameRoom?.endGame();
+        }
+      }
+    }
+
+    let bothLeft = gameRoom?.checkIfBothLeft();
 
     if (bothLeft) {
       gameRoom?.terminateConnections();
@@ -135,19 +143,25 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   if (parsedMessage.type === MessageTypes.REQUEST_REMATCH) {
     const { userId, roomId } = parsedMessage.payload;
     const gameRoom = rooms[roomId];
+    let sender = -1;
     let recipient = -1;
+    let opponentHasLeft = false;
     if (!gameRoom?.rematchRequestOngoing) {
       gameRoom?.forEachPlayer((player) => {
         if (player.id !== userId) {
           recipient = player.id;
+          opponentHasLeft = player.hasLeftGame;
         } else {
-          gameRoom.allowInformRematchRequest(player.id);
+          sender = player.id;
         }
       })
     }
 
-    if (recipient !== -1) {
+    if (!opponentHasLeft) {
+      gameRoom?.allowInformRematchRequest(sender);
       gameRoom?.askRematch(recipient);
+    } else {
+      gameRoom?.informOpponentHasLeft(sender);
     }
   }
 
@@ -231,8 +245,8 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   }
 
   console.log(parsedMessage);
-  // console.log(waitingLine);
-  // console.log(rooms);
+  console.log('waitingLine', waitingLine);
+  console.log('rooms', rooms);
 }
 
 export default baseController;

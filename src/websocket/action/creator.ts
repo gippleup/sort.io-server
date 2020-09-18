@@ -13,6 +13,10 @@ export const sendRoom = (param: SendRoomParams) => JSON.stringify({
   payload: param,
 })
 
+export const informOpponentHasLeft = () => JSON.stringify({
+  type: SocketServerMessageTypes.INFORM_OPPONENT_HAS_LEFT
+})
+
 export const syncTimer = (leftTime: number) => JSON.stringify({
   type: SocketServerMessageTypes.SYNC_TIMER,
   payload: {

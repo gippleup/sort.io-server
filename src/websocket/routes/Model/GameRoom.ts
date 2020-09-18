@@ -6,11 +6,12 @@ import { MapOption } from '../../../algo/generateMap';
 import { getRepository } from 'typeorm';
 import { MultiPlay } from '../../../entity/MultiPlay';
 import { getMultiPlayRankByUserId } from '../../../utils/multiPlay';
+import { rooms, waitingLine } from '../index';
 
 export type MapDesc = MapOption & { difficulty: number };
 
 class GameRoom {
-  roomId: number | undefined;
+  roomId: number;
   players: Player[] = [];
   winner: number = -1;
   createdAt: string | undefined;
@@ -29,11 +30,25 @@ class GameRoom {
     this.roomId = GameRoom.count;
     GameRoom.count += 1;
 
+    this.forEachPlayer((player) => {
+      player.addListener("close", () => {
+        player.hasLeftGame = true;
+        const opponent = this.players.filter((P) => P.id !== player.id)[0];
+        this.stopTimer();
+        this.stopPrepareTimer();
+        this.informOpponentHasLeft(opponent.id);
+        if (this.checkIfBothLeft()) {
+          delete rooms[this.roomId];
+        } 
+      })
+    })
+
     this.generateMap = this.generateMap.bind(this);
     this.decideDiffiulty = this.decideDiffiulty.bind(this);
     this.forEachClient = this.forEachClient.bind(this);
     this.forEachPlayer = this.forEachPlayer.bind(this);
     this.sendRoomData = this.sendRoomData.bind(this);
+    this.killPlayerIfNoResponseAfter = this.killPlayerIfNoResponseAfter.bind(this);
     this.checkPlayerIsReady = this.checkPlayerIsReady.bind(this);
     this.checkIfBothPlayerIsReady = this.checkIfBothPlayerIsReady.bind(this);
     this.alertPrepare = this.alertPrepare.bind(this);
@@ -135,6 +150,30 @@ class GameRoom {
         player.isPrepared = true;
       }
     })
+
+    this.killPlayerIfNoResponseAfter(userId);
+  }
+
+
+  checkPlayerIsReady(userId: number) {
+    this.forEachPlayer((player) => {
+      if (player.id === userId) {
+        player.isReady = true;
+      }
+    })
+
+    this.killPlayerIfNoResponseAfter(userId);
+  }
+
+  killPlayerIfNoResponseAfter(userId: number, ms: number = 10000) {
+    this.forEachPlayer((player) => {
+      if (player.id !== userId) return;
+      player.killIfNoResponseAfter(ms, (id) => {
+        player.hasLeftGame = true;
+        const opponent = this.players.filter((P) => P.id !== id)[0];
+        this.informOpponentHasLeft(opponent.id);
+      })
+    })
   }
 
   checkIfBothPlayerIsPrepared() {
@@ -145,14 +184,6 @@ class GameRoom {
       }
     })
     return result;
-  }
-
-  checkPlayerIsReady(userId: number) {
-    this.forEachPlayer((player) => {
-      if (player.id === userId) {
-        player.isReady = true;
-      }
-    })
   }
 
   checkIfBothPlayerIsReady() {
@@ -166,6 +197,7 @@ class GameRoom {
   }
 
   startGame() {
+    this.forEachPlayer((player) => player.cancelKillRequest());
     this.startTimer();
   }
 
@@ -252,6 +284,14 @@ class GameRoom {
     this.forEachPlayer((player) => {
       if (player.id === userId) {
         player.score = newScore
+      }
+    })
+  }
+
+  informOpponentHasLeft(userId: number) {
+    this.forEachPlayer((player) => {
+      if (player.id === userId) {
+        player.client.send(socketAction.informOpponentHasLeft())
       }
     })
   }
@@ -366,6 +406,21 @@ class GameRoom {
 
   endGame() {
     this.saveResult()
+  }
+
+  checkIfBothLeft() {
+    let bothLeft = true;
+    this.forEachPlayer((player) => {
+      if (!player.hasLeftGame) {
+        bothLeft = false;
+      }
+    })
+    return bothLeft;
+  }
+
+  getPlayer(userId: number) {
+    let player = this.players.filter((player) => player.id === userId);
+    return player[0];
   }
 
   terminateConnections() {

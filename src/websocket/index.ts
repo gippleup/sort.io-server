@@ -15,9 +15,6 @@ export const handleUpgrade = (server: Server) => {
         ws.on('message', (message) => {
           wsContoller(message, ws, matchServer)
         })
-        ws.on('close', (code, reason) => {
-          console.log(code, reason);
-        })
       })
     }
   })
