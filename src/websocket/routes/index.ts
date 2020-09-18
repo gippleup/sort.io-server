@@ -24,10 +24,6 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
 
     await waitingLine.add(newPlayer)
   }
-        })
-      })
-      .catch(() => {});
-  }
 
   if (parsedMessage.type === MessageTypes.LOADED) {
     const {roomId, userId} = parsedMessage.payload;
@@ -105,7 +101,7 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   if (parsedMessage.type === MessageTypes.ALERT_READY) {
     const {roomId, userId} = parsedMessage.payload;
     const gameRoom = rooms[roomId];
-    gameRoom?.checkPlayerIsReady(userId);
+    gameRoom?.checkPlayerAsReady(userId);
     const areBothReady = gameRoom?.checkIfBothPlayerIsReady();
     if (areBothReady) {
       gameRoom?.alertPrepare();
@@ -115,7 +111,7 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   if (parsedMessage.type === MessageTypes.ALERT_PREPARED) {
     const {roomId, userId} = parsedMessage.payload;
     const gameRoom = rooms[roomId];
-    gameRoom?.checkPlayerIsPrepared(userId);
+    gameRoom?.checkPlayerAsPrepared(userId);
     const areBothPrepared = gameRoom?.checkIfBothPlayerIsPrepared();
     if (areBothPrepared) {
       gameRoom?.startPrepareTimer();
@@ -210,6 +206,7 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
     const { userId, roomId } = parsedMessage.payload;
     const gameRoom = rooms[roomId];
     let bothReceivedMap = true;
+    
     gameRoom?.forEachPlayer((player) => {
       if (player.id === userId) {
         player.receivedMap = true;
@@ -227,11 +224,27 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   if (parsedMessage.type === MessageTypes.REQUEST_OTHERMATCH) {
     const { userId, roomId } = parsedMessage.payload;
     const gameRoom = rooms[roomId];
+    const requester = gameRoom?.getPlayer(userId);
+    gameRoom?.checkPlayerAsLeft(userId);
+
+    if (gameRoom?.checkIfBothLeft()) {
+      gameRoom.deleteSelf();
+    }
+
+    if (requester) {
+      waitingLine.add(requester);
+    }
   }
 
   if (parsedMessage.type === MessageTypes.CANCEL_REQUEST_OTHERMATCH) {
     const { userId, roomId } = parsedMessage.payload;
     const gameRoom = rooms[roomId];
+    const canceler = gameRoom?.getPlayer(userId);
+    
+    if (canceler) {
+      canceler.hasLeftGame = false;
+      waitingLine.delete(canceler);
+    }
   }
 
   console.log(parsedMessage);
