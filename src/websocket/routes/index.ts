@@ -22,18 +22,8 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
       name,
     })
 
-    await waitingLine
-      .add(newPlayer)
-      .findMatch(newPlayer)
-      .then((players) => {
-        const [player1, player2] = players;
-        const gameRoom = new GameRoom(player1, player2);
-        gameRoom.generateMap()
-        .then(() => {
-          if (gameRoom.roomId !== undefined) {
-            rooms[gameRoom.roomId] = gameRoom;
-            gameRoom.sendRoomData();
-          }
+    await waitingLine.add(newPlayer)
+  }
         })
       })
       .catch(() => {});
@@ -42,7 +32,7 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   if (parsedMessage.type === MessageTypes.LOADED) {
     const {roomId, userId} = parsedMessage.payload;
     const gameRoom = rooms[roomId]
-    gameRoom?.checkPlayerIsReady(userId);
+    gameRoom?.checkPlayerAsReady(userId);
     const areBothReady = gameRoom?.checkIfBothPlayerIsReady();
     if (areBothReady) {
       gameRoom?.startGame();

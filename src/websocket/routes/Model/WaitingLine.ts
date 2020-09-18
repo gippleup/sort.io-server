@@ -1,5 +1,7 @@
 import Player from "./Player";
 import mergeSort from "../utils/mergeSort";
+import GameRoom from './GameRoom';
+import {rooms} from '../index'
 
 class WaitingLine {
   line: Player[] = [];
@@ -8,7 +10,21 @@ class WaitingLine {
 
   add(player: Player) {
     this.line.push(player);
-    return this;
+
+    return this.findMatch(player)
+    .then((players) => {
+      const [player1, player2] = players;
+      const gameRoom = new GameRoom(player1, player2);
+      gameRoom.generateMap()
+        .then(() => {
+          if (gameRoom.roomId !== undefined) {
+            rooms[gameRoom.roomId] = gameRoom;
+            gameRoom.sendRoomData();
+            gameRoom.forEachPlayer((player) => player.reset())
+          }
+        })
+    })
+    .catch(() => {})
   }
 
   delete(player: Player | number) {

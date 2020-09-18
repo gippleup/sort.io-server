@@ -1,4 +1,5 @@
 import Ws from 'ws';
+import { waitingLine } from '..';
 
 type PlayerConstructor = {
   ws: Ws,
@@ -34,6 +35,10 @@ class Player {
     })
 
     this.reset = this.reset.bind(this);
+  }
+
+  deleteSelfFromWaitingLine() {
+    waitingLine.delete(this.id);
   }
 
   reset() {
