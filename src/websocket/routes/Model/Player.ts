@@ -45,6 +45,7 @@ class Player {
     this.isPrepared = false;
     this.isReady = false;
     this.receivedMap = false;
+    this.hasLeftGame = false;
     this.score = 0;
   }
 
