@@ -19,12 +19,12 @@ type UserController = {
 
 const controller: UserController = {
   signup: async (req, res) => {
-    const {googleId, userId} = req.body;
+    const {googleId, userId, photo, name} = req.body;
     try {
       await getRepository(User)
       .createQueryBuilder("user")
       .update()
-      .set({googleId})
+      .set({googleId, profileImg: photo, name})
       .where("user.id = :id", {id: userId})
       .execute();
       res.end('ok')
