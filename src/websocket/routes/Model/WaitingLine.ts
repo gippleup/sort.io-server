@@ -9,22 +9,23 @@ class WaitingLine {
   constructor() {}
 
   add(player: Player) {
+    player.reset();
+    console.log(player);
     this.line.push(player);
 
-    return this.findMatch(player)
-    .then((players) => {
-      const [player1, player2] = players;
-      const gameRoom = new GameRoom(player1, player2);
-      gameRoom.generateMap()
-        .then(() => {
-          if (gameRoom.roomId !== undefined) {
-            rooms[gameRoom.roomId] = gameRoom;
-            gameRoom.sendRoomData();
-            gameRoom.forEachPlayer((player) => player.reset())
-          }
-        })
-    })
-    .catch(() => {})
+    this.findMatch(player)
+      .then((players) => {
+        const [player1, player2] = players;
+        const gameRoom = new GameRoom(player1, player2);
+        gameRoom.generateMap()
+          .then(() => {
+            if (gameRoom.roomId !== undefined) {
+              rooms[gameRoom.roomId] = gameRoom;
+              gameRoom.sendRoomData();
+            }
+          })
+      })
+      .catch(() => {})
   }
 
   delete(player: Player | number) {
@@ -40,10 +41,11 @@ class WaitingLine {
 
   findMatch(player: Player) {
     return new Promise<[Player, Player]>((resolve, reject) => {
-      const opponents = this.line.filter((entry) => entry !== player);
+      const opponents = this.line.filter((entry) => entry.id !== player.id);
       const opponent = opponents.pop();
       if (opponent && opponent !== player) {
         resolve ([opponent, player]);
+        console.log('여기가 언제 동작하는지 봐야됨')
         this.line = this.line
           .filter((entry) => entry !== player && entry !== opponent)
       } else {
