@@ -19,7 +19,7 @@ const controller: CountryController = {
       res.sendFile(`${__dirname}/country/svg/${fileName}`)
     } else {
       res.status(404)
-      res.send('not supported')
+      res.sendFile(`${__dirname}/country/svg/question.svg`)
     }
   },
 }
