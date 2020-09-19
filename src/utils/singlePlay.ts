@@ -23,7 +23,8 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
         S.difficulty,
         S.createdAt,
         ROW_NUMBER() OVER (ORDER BY S.difficulty DESC, S.createdAt DESC) as 'rank',
-        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC, S.createdAt DESC) / ${totalUser} as 'rate'
+        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC, S.createdAt DESC) / ${totalUser} as 'rate',
+        U.profileImg as photo
       FROM
         (SELECT
           single.userId,

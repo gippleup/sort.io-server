@@ -22,7 +22,8 @@ type RawMultiPlayRankData = {
   winningRate: number,
   KBI: number,
   rank: string,
-  rate: string
+  rate: string,
+  photo: string,
 }
 
 type ConvertedMultiPlayRankData = {
@@ -36,7 +37,8 @@ type ConvertedMultiPlayRankData = {
   winningRate: number,
   KBI: number,
   rank: number,
-  rate: number
+  rate: number,
+  photo: string,
 }
 
 type MultiPlayRankReturnData = {
@@ -112,7 +114,8 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
       IFNULL(multiGameRecord.lose, 0) as lose,
       IFNULL(multiGameRecord.total, 0) as total,
       IFNULL(multiGameRecord.winningRate, 0) as winningRate,
-      IFNULL(multiGameRecord.KBI, 0) as KBI
+      IFNULL(multiGameRecord.KBI, 0) as KBI,
+      user.profileImg as photo
     FROM user
       LEFT JOIN
         (SELECT
@@ -139,9 +142,8 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
       ) AS record
   ORDER BY 'rank' DESC
   `).then((data: RawMultiPlayRankData[]) => {
-    console.log(data)
     const convertedData: ConvertedMultiPlayRankData[] = data.map((row) => {
-      const {KBI, draw, lose, name, rank, rate, total, createdAt, id, win, winningRate} = row;
+      const {KBI, draw, lose, name, rank, rate, total, createdAt, id, win, winningRate, photo} = row;
       return {
         id,
         name,
@@ -153,7 +155,8 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
         winningRate,
         KBI: KBI,
         rank: Number(rank),
-        rate: Number(rate)
+        rate: Number(rate),
+        photo
       }
     })
     let targetUser: undefined | ConvertedMultiPlayRankData;
