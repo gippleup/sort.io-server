@@ -1,5 +1,6 @@
 import Ws from 'ws';
 import { waitingLine } from '..';
+import { getUserById } from '../../../utils/user';
 
 type PlayerConstructor = {
   ws: Ws,
@@ -13,6 +14,7 @@ class Player {
   client: Ws;
   id: number;
   name: string;
+  photo: string | undefined;
   score: number = 0;
   isReady: boolean = false;
   isPrepared: boolean = false;
@@ -29,12 +31,19 @@ class Player {
     this.client = ws;
     this.id = id;
     this.name = name;
-
+    
     this.client.addListener("message", () => {
       this.lastResponseTimeStamp = Date.now();
     })
 
     this.reset = this.reset.bind(this);
+    this.fetchProfileImg = this.fetchProfileImg.bind(this);
+  }
+
+  fetchProfileImg() {
+    return getUserById(this.id).then((user) => {
+      this.photo = user?.profileImg;
+    })
   }
 
   deleteSelfFromWaitingLine() {

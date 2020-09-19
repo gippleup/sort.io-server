@@ -33,6 +33,7 @@ export type SendRoomMessage = {
     playerData: {
       name: string;
       id: number;
+      photo: string;
     }[];
   }
 }

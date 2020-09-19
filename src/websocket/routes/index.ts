@@ -22,7 +22,8 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
       name,
     })
 
-    await waitingLine.add(newPlayer)
+    await newPlayer.fetchProfileImg();
+    waitingLine.add(newPlayer)
   }
 
   if (parsedMessage.type === MessageTypes.LOADED) {
@@ -248,8 +249,10 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   }
 
   console.log(parsedMessage);
-  console.log('waitingLine', waitingLine);
-  console.log('rooms', rooms);
+  // if (parsedMessage.type !== MessageTypes.DOCK) {
+  //   console.log(waitingLine);
+  //   console.log('rooms', rooms);
+  // }
 }
 
 export default baseController;

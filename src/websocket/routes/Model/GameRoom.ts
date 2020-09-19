@@ -140,6 +140,7 @@ class GameRoom {
     const playerData = this.players.map((player) => ({
       name: player.name,
       id: player.id,
+      photo: player.photo,
     }))
     if (!map || !mapDesc || roomId === undefined) return;
     this.forEachClient((client) => {

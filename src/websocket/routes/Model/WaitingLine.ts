@@ -45,7 +45,6 @@ class WaitingLine {
       const opponent = opponents.pop();
       if (opponent && opponent !== player) {
         resolve ([opponent, player]);
-        console.log('여기가 언제 동작하는지 봐야됨')
         this.line = this.line
           .filter((entry) => entry !== player && entry !== opponent)
       } else {
