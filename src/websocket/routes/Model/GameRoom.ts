@@ -43,12 +43,16 @@ class GameRoom {
       })
     })
 
+    this.removePlayer = this.removePlayer.bind(this);
+
     this.generateMap = this.generateMap.bind(this);
     this.decideDiffiulty = this.decideDiffiulty.bind(this);
     this.forEachClient = this.forEachClient.bind(this);
     this.forEachPlayer = this.forEachPlayer.bind(this);
     this.sendRoomData = this.sendRoomData.bind(this);
     this.killPlayerIfNoResponseAfter = this.killPlayerIfNoResponseAfter.bind(this);
+    this.checkIfBothLeft = this.checkIfBothLeft.bind(this);
+    this.checkIfSomeLeft = this.checkIfSomeLeft.bind(this);
     this.checkPlayerAsPrepared = this.checkPlayerAsPrepared.bind(this);
     this.checkPlayerAsLeft = this.checkPlayerAsLeft.bind(this);
     this.checkPlayerAsReady = this.checkPlayerAsReady.bind(this);
@@ -78,6 +82,10 @@ class GameRoom {
     this.getPlayer = this.getPlayer.bind(this);
     this.getOpponent = this.getOpponent.bind(this);
     this.terminateConnections = this.terminateConnections.bind(this);
+  }
+
+  removePlayer(userId: number) {
+    this.players = this.players.filter((player) => player.id !== userId);
   }
 
   deleteSelf() {
@@ -165,6 +173,9 @@ class GameRoom {
 
   checkPlayerAsLeft(userId: number) {
     this.getPlayer(userId).hasLeftGame = true;
+    if (this.checkIfBothLeft()) {
+      this.deleteSelf();
+    }
   }
 
   killPlayerIfNoResponseAfter(userId: number, ms: number = 10000) {
@@ -201,8 +212,41 @@ class GameRoom {
     this.startTimer();
   }
 
+  stopGameIfSomeLeft() {
+    if (this.checkIfSomeLeft()) {
+      this.stopPrepareTimer();
+      this.stopTimer();
+      const leftPlayer = this.getLeftPlayer();
+      leftPlayer.forEach((player) => {
+        this.informOpponentHasLeft(player.id);
+      })
+    }
+  }
+
   onTimeout() {
     this.stopTimer();
+    const winner = this.players.reduce((best, player) => {
+      if (player.score > best.score) {
+        return player;
+      } else {
+        return best;
+      }
+    })
+    const loser = this.players.reduce((worst, player) => {
+      if (player.score < worst.score) {
+        return player;
+      } else {
+        return worst;
+      }
+    })
+
+    if (winner.score > loser.score) {
+      this.checkWinner(winner.id);
+      this.informWinner();
+    } else {
+      this.checkWinner(-1);
+      this.informWinner();
+    }
     // this.endGame();
   }
 
@@ -240,7 +284,8 @@ class GameRoom {
   }
 
   startPrepareTimer() {
-    this.prepareTimer = setInterval(this.onPrepareTimerInterval, 1000 / this.fps)
+    this.prepareTimer = setInterval(this.onPrepareTimerInterval, 1000 / this.fps);
+    this.stopGameIfSomeLeft();
   }
 
   stopPrepareTimer() {
@@ -253,6 +298,7 @@ class GameRoom {
   startTimer(initialTime = 120) {
     this.leftTime = initialTime;
     this.interval = setInterval(this.onTimerInterval, 1000 / this.fps);
+    this.stopGameIfSomeLeft();
   }
 
   stopTimer() {
@@ -381,6 +427,14 @@ class GameRoom {
 
   endGame() {
     this.saveResult()
+  }
+
+  checkIfSomeLeft() {
+    return this.players.filter((player) => player.hasLeftGame).length !== 0;
+  }
+
+  getLeftPlayer() {
+    return this.players.filter((player) => !player.hasLeftGame);
   }
 
   checkIfBothLeft() {
