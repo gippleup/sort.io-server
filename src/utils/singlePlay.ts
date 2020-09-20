@@ -15,26 +15,38 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
   const totalUser = await userRepo
     .createQueryBuilder("user")
     .getCount();
+
+  const lastGameTable = `
+    SELECT
+      single.userId,
+      MAX(single.id) AS gameId
+    FROM single_play AS single
+    GROUP BY single.userId
+  `;
+
+  // S.userId,
+  //   U.name,
+  //   S.difficulty,
+  //   S.createdAt,
+  //   ROW_NUMBER() OVER(ORDER BY S.difficulty DESC, S.createdAt DESC) as 'rank',
+  //   ROW_NUMBER() OVER(ORDER BY S.difficulty DESC, S.createdAt DESC) / ${ totalUser } as 'rate',
+  //   U.profileImg as photo
+
+  const rankQuery = `
+    SELECT
+      user.id as userId,
+      user.name,
+      user.profileImg as photo,
+      S.createdAt,
+      IFNULL(S.difficulty, -1) as difficulty,
+      @rank := ROW_NUMBER() OVER(ORDER BY S.difficulty DESC, S.createdAt DESC) as 'rank',
+      @rate := ROW_NUMBER() OVER(ORDER BY S.difficulty DESC, S.createdAt DESC) / ${ totalUser } as 'rate'
+    FROM
+      user LEFT JOIN (${lastGameTable}) AS last_game ON user.id = last_game.userId
+      LEFT JOIN single_play AS S ON S.id = last_game.gameId
+  `;
   const userRank = await getConnection()
-    .query(`
-      SELECT
-        S.userId,
-        U.name,
-        S.difficulty,
-        S.createdAt,
-        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC, S.createdAt DESC) as 'rank',
-        ROW_NUMBER() OVER (ORDER BY S.difficulty DESC, S.createdAt DESC) / ${totalUser} as 'rate',
-        U.profileImg as photo
-      FROM
-        (SELECT
-          single.userId,
-          MAX(single.id) AS gameId
-        FROM single_play AS single
-        GROUP BY single.userId) AS last_game
-      INNER JOIN single_play AS S ON S.id = last_game.gameId
-      INNER JOIN user AS U ON U.id = S.userId
-      ORDER BY S.difficulty DESC, S.createdAt DESC
-      `).then((data) => {
+    .query(rankQuery).then((data) => {
       let targetUser;
       let targetIndex;
       for (let i = 0; i < data.length; i += 1) {
@@ -45,7 +57,7 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
           break;
         }
       }
-      if (targetIndex) {
+      if (targetIndex !== undefined) {
         return {
           targetUser,
           beforeTargetUser: data.slice(Math.max(0, targetIndex - padding), targetIndex),
