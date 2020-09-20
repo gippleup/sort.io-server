@@ -9,8 +9,6 @@ class WaitingLine {
   constructor() {}
 
   add(player: Player) {
-    player.reset();
-    console.log(player);
     this.line.push(player);
 
     this.findMatch(player)
@@ -31,9 +29,9 @@ class WaitingLine {
   delete(player: Player | number) {
     this.line = this.line.filter((entry) => {
       if (typeof player === 'number') {
-        entry.id !== player;
+        return entry.id !== player;
       } else {
-        entry !== player
+        return entry !== player
       }
     });
     return this;
