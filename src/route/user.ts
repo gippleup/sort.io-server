@@ -18,6 +18,8 @@ router.post('/gold', controller.gold.post);
 router.get('/ticket', controller.ticket.get);
 router.post('/ticket', controller.ticket.post);
 
+router.post('/update', controller.update);
+
 router.post('/signup', controller.signup)
 router.post('/signin', controller.signin)
 router.get('/signout', controller.signout)

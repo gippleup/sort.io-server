@@ -5,7 +5,7 @@ import { getUserById, setUserData, getUserByGoogleId } from "../utils/user";
 import { getSinglePlayByUserId } from "../utils/singlePlay";
 import { getMultiPlayByUserId } from "../utils/multiPlay";
 
-type UserControllerPureTypes = "signup" | "signin" | "signout" | "delete";
+type UserControllerPureTypes = "signup" | "signin" | "signout" | "delete" | "update";
 type UserControllerDualTypes = "gold" | "playdata" | "ticket";
 
 type UserController = {
@@ -20,21 +20,32 @@ type UserController = {
 const controller: UserController = {
   signup: async (req, res) => {
     const {googleId, userId, photo, name} = req.body;
-    try {
-      await getRepository(User)
-      .createQueryBuilder("user")
-      .update()
-      .set({googleId, profileImg: photo, name})
-      .where("user.id = :id", {id: userId})
-      .execute();
-      res.end('ok')
-    } catch (e) {
-      res.end('FALIED TO SIGN UP')
+    const existingData = await getUserByGoogleId(googleId);
+    if (existingData) {
+      res.json(existingData);
+    } else {
+      try {
+        await getRepository(User)
+          .createQueryBuilder("user")
+          .update()
+          .set({googleId, profileImg: photo, name, isTemp: false})
+          .where("user.id = :id", {id: userId})
+          .execute();
+        const updatedData = await getUserByGoogleId(googleId);
+        res.json(updatedData);
+      } catch (e) {
+        res.end('FALIED TO SIGN UP')
+      }
     }
   },
   signin: (req, res) => {
   },
   signout: (req, res) => {
+  },
+  update: async (req, res) => {
+    const {id, ...rest} = req.body;
+    await setUserData(id, rest);
+    res.end('ok');
   },
   delete: (req, res) => {
   },
@@ -95,7 +106,7 @@ const controller: UserController = {
       }
 
       if (googleId) {
-        const user = await getUserByGoogleId(Number(googleId));
+        const user = await getUserByGoogleId(String(googleId));
         if (user) {
           const singlePlay = await getSinglePlayByUserId(user.id);
           const multiPlay = await getMultiPlayByUserId(user.id);
