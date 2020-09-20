@@ -10,7 +10,7 @@ export const getUserById = async (id: number) => {
   return user;
 }
 
-export const getUserByGoogleId = async (id: number) => {
+export const getUserByGoogleId = async (id: string) => {
   const userRepo = getRepository(User);
   const user = await userRepo
     .createQueryBuilder("user")

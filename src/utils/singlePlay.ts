@@ -24,14 +24,6 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
     GROUP BY single.userId
   `;
 
-  // S.userId,
-  //   U.name,
-  //   S.difficulty,
-  //   S.createdAt,
-  //   ROW_NUMBER() OVER(ORDER BY S.difficulty DESC, S.createdAt DESC) as 'rank',
-  //   ROW_NUMBER() OVER(ORDER BY S.difficulty DESC, S.createdAt DESC) / ${ totalUser } as 'rate',
-  //   U.profileImg as photo
-
   const rankQuery = `
     SELECT
       user.id as userId,

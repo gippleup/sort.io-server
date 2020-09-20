@@ -30,6 +30,6 @@ export class User {
   @Column("int")
   ticket!: number;
 
-  @Column("int")
-  googleId!: number;
+  @Column("varchar")
+  googleId!: string;
 }
