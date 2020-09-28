@@ -24,6 +24,7 @@ class GameRoom {
   prepareTimer: NodeJS.Timer | undefined;
   fps: number = 1;
   rematchRequestOngoing: boolean = false;
+  timeFinished = false;
   constructor (player1: Player, player2: Player) {
     this.players.push(player1, player2);
     this.createdAt = new Date(Date.now()).toUTCString();
@@ -125,7 +126,7 @@ class GameRoom {
   generateMap() {
     return this.decideDiffiulty()
       .then((difficulty) => {
-        const { question, desc } = generateMultiMap(difficulty);
+        const { question, desc } = generateMultiMap(5);
         this.map = question;
         this.mapDesc = desc;
       })
@@ -178,8 +179,9 @@ class GameRoom {
     }
   }
 
-  killPlayerIfNoResponseAfter(userId: number, ms: number = 10000) {
+  killPlayerIfNoResponseAfter(userId: number, ms: number = 20000) {
     const player = this.getPlayer(userId);
+    player.cancelKillRequest();
     player.killIfNoResponseAfter(ms, (id) => {
       player.hasLeftGame = true;
       const opponent = this.players.filter((P) => P.id !== id)[0];
@@ -224,7 +226,12 @@ class GameRoom {
   }
 
   onTimeout() {
+    if (this.timeFinished) return;
+
+    this.timeFinished = true;
+
     this.stopTimer();
+
     const winner = this.players.reduce((best, player) => {
       if (player.score > best.score) {
         return player;
@@ -312,6 +319,7 @@ class GameRoom {
     this.stopTimer();
     this.stopPrepareTimer();
     this.leftTime = this.gameDuration;
+    this.timeFinished = false;
     this.leftPrepareTime = 3;
   }
 
