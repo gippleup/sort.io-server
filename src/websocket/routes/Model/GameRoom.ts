@@ -126,7 +126,7 @@ class GameRoom {
   generateMap() {
     return this.decideDiffiulty()
       .then((difficulty) => {
-        const { question, desc } = generateMultiMap(5);
+        const { question, desc } = generateMultiMap(difficulty);
         this.map = question;
         this.mapDesc = desc;
       })
