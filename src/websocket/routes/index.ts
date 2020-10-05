@@ -41,7 +41,7 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
     const gameRoom = rooms[roomId];
     gameRoom?.updateScore(userId, score);
     const winner = gameRoom?.checkWinner();
-    if (winner) {
+    if (winner !== -1) {
       gameRoom?.endGame();
     }
   }
