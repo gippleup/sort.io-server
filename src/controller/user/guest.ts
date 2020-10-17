@@ -1,6 +1,9 @@
 import { ExpressController } from "../types"
 import { User } from "../../entity/User"
 import { getRepository, createQueryBuilder, Repository } from "typeorm";
+import { addPurchaseHistory } from "../../utils/purchase";
+import { skinList } from "../../asset/items/skin";
+import { expressionList } from "../../asset/items/expression";
 
 type GuestControllerTypes = "create";
 
@@ -27,6 +30,32 @@ const controller: GuestController = {
     const createdGuest = await userRepo.findOne({where: {
       id: user.id,
     }});
+    await addPurchaseHistory(user.id, {
+      category: "skin",
+      name: "basic",
+    }, 0)
+    const basicSkin: (keyof typeof skinList)[] = ["basic"];
+    const basicExpression: (keyof typeof expressionList)[] = [
+      "like",
+      "trophy",
+      "meh",
+      "heart",
+      "sad"
+    ];
+    await Promise.all(
+      [...basicSkin.map((name) => {
+        return addPurchaseHistory(user.id, {
+          category: "expression",
+          name,
+        }, 0)
+      }),
+      ...basicExpression.map((name) => {
+        return addPurchaseHistory(user.id, {
+          category: "expression",
+          name,
+        }, 0)
+      })],
+    )
     res.json(createdGuest);
   },
 }
