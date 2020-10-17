@@ -1,12 +1,12 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm'
-import { itemCategory } from '../asset/items/items';
+import { ItemCategory } from '../asset/items';
 
 @Entity()
 export class PurchaseHistory {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column("int")
+  @Column("bigint")
   userId!: number;
 
   @CreateDateColumn()
@@ -16,14 +16,14 @@ export class PurchaseHistory {
   item!: string;
 
   @Column("varchar")
-  category!: itemCategory;
+  category!: ItemCategory;
 
   @Column("int")
   price!: number;
 
   @Column("int")
-  expense!: string;
+  expense!: number;
 
   @Column("int")
-  leftGold!: string;
+  leftGold!: number;
 }
