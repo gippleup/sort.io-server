@@ -4,9 +4,21 @@ import { getRepository, getConnection } from "typeorm";
 import { getUserById, setUserData, getUserByGoogleId } from "../utils/user";
 import { getSinglePlayByUserId } from "../utils/singlePlay";
 import { getMultiPlayByUserId } from "../utils/multiPlay";
+import { getCheckedItemList, purchase } from "../utils/purchase";
 
-type UserControllerPureTypes = "signup" | "signin" | "signout" | "delete" | "update";
-type UserControllerDualTypes = "gold" | "playdata" | "ticket";
+type UserControllerPureTypes = 
+  "signup" 
+  | "signin" 
+  | "signout" 
+  | "delete" 
+  | "update"
+  | "getResource";
+
+type UserControllerDualTypes = 
+  "gold" 
+  | "playdata" 
+  | "ticket"
+  | "purchase";
 
 type UserController = {
   [T in UserControllerPureTypes]: ExpressController;
@@ -57,15 +69,44 @@ const controller: UserController = {
       res.send(gold);
     },
     post: async(req, res)  => {
-      const {userId, newAmount} = req.body;
+      const {userId, amount, type} = req.body;
+      const userData = await getUserById(userId);
+
+      if (!userData) {
+        return res.status(404).send("NO SUCH USER");
+      }
+
+
+      if (Number(amount) <= 0) {
+        return res.status(400).send("INVALID INPUT")
+      }
+
+      const sign = type === "USE" ? -1 : 1;
+
       try {
         await setUserData(userId, {
-          gold: newAmount,
+          gold: userData.gold + (sign * amount),
         })
-        res.send('UPDATED GOLD')
+        const updateData = await getUserById(userId);
+        res.json(updateData);
       } catch (e) {
-        res.send('GOLD UPDATE FAIL')
+        res.send('GOLD UPDATE FAIL');
       }
+    }
+  },
+  getResource: async(req, res) => {
+    const { userId } = req.body;
+    const target: "gold" | "ticket" | undefined = req.body.target;
+    if (!target) return res.send("TARGET IS NOT SPECIFIED");
+    try {
+      const userData = await getUserById(userId)
+      if (userData) {
+        res.send(userData[target]);
+      } else {
+        res.send('GHOST CAPTURED');
+      }
+    } catch (e) {
+      res.send('GOLD UPDATE FAIL');
     }
   },
   ticket: {
@@ -76,12 +117,25 @@ const controller: UserController = {
       res.send(ticket);
     },
     post: async(req, res)  => {
-      const {userId, newAmount} = req.body;
+      const {userId, amount, type} = req.body;
+      const userData = await getUserById(userId);
+
+      if (!userData) {
+        return res.status(404).send("NO SUCH USER");
+      }
+
+      if (amount <= 0) {
+        return res.status(400).send("INVALID INPUT");
+      }
+
+      const sign = type === "USE" ? -1 : 1;
+
       try {
         await setUserData(userId, {
-          ticket: newAmount,
+          ticket: userData.ticket + (sign * amount),
         })
-        res.send('UPDATED GOLD')
+        const updatedData = await getUserById(userId);
+        res.json(updatedData);
       } catch (e) {
         res.send('GOLD UPDATE FAIL')
       }
@@ -125,6 +179,26 @@ const controller: UserController = {
     post: (req, res) => {
     }
   },
+  purchase: {
+    get: async (req, res) => {
+      const { userId } = req.query;
+      const list = await getCheckedItemList(Number(userId));
+      res.json(list);
+    },
+    post: async (req, res) => {
+      const { userId, category, name } = req.body;
+      try {
+        await purchase(userId, {
+          category,
+          name,
+        })
+        const updatedItemList = await getCheckedItemList(userId);
+        res.json(updatedItemList);
+      } catch(e) {
+        res.status(400).end('SOMETHING WENT WRONG');
+      }
+    }
+  }
 }
 
 export default controller
