@@ -26,5 +26,7 @@ router.get('/signout', controller.signout)
 router.get('/delete', controller.delete)
 
 router.use('/guest', guestRouter);
+router.get('/purchase', controller.purchase.get);
+router.post('/purchase', controller.purchase.post);
 
 export default router;
