@@ -16,6 +16,7 @@ export enum SocketClientMessageTypes {
   REQUEST_OTHERMATCH = 'REQUEST_OTHERMATCH',
   CANCEL_REQUEST_OTHERMATCH = 'CANCEL_REQUEST_OTHERMATCH',
   INFORM_RECEIVED_MAP = 'INFORM_RECEIVED_MAP',
+  EXPRESS_EMOTION = 'EXPRESS_EMOTION',
 }
 
 export type EnterMessage = {
@@ -23,6 +24,7 @@ export type EnterMessage = {
   payload: {
     userId: number;
     name: string;
+    skin: string;
   }
 }
 
@@ -111,6 +113,12 @@ export type CancelRequestOtherMatch = {
   payload: BasicParam
 }
 
+export type ExpressEmotion = {
+  type: SocketClientMessageTypes.EXPRESS_EMOTION;
+  payload: BasicParam & { expression: string };
+}
+
+
 export type SocketClientMessages =
   EnterMessage
   | DockMessage
@@ -128,3 +136,4 @@ export type SocketClientMessages =
   | CancelRequestRematch
   | CancelRequestOtherMatch
   | DeclineRequestRematch
+  | ExpressEmotion

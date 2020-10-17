@@ -15,11 +15,12 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
 
   const parsedMessage: SocketMessage = JSON.parse(message);
   if (parsedMessage.type === MessageTypes.ENTER) {
-    const {userId, name} = parsedMessage.payload;
+    const {userId, name, skin} = parsedMessage.payload;
     const newPlayer = new Player({
       id: userId,
       ws,
       name,
+      skin,
     })
 
     await newPlayer.fetchProfileImg();
@@ -234,7 +235,8 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
       const newborn = new Player({
         id: player.id,
         name: player.name,
-        ws: player.client
+        ws: player.client,
+        skin: player.skin,
       })
 
       waitingLine.add(newborn);
@@ -252,6 +254,12 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
   if (parsedMessage.type === MessageTypes.CANCEL_REQUEST_OTHERMATCH) {
     const { userId } = parsedMessage.payload;
     waitingLine.delete(userId);
+  }
+
+  if (parsedMessage.type === MessageTypes.EXPRESS_EMOTION) {
+    const {expression, roomId, userId} = parsedMessage.payload;
+    const gameRoom = rooms[roomId];
+    gameRoom?.sendExpressionData(userId, expression);
   }
 
   console.log(parsedMessage);

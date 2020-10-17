@@ -6,6 +6,7 @@ type PlayerConstructor = {
   ws: Ws,
   id: number,
   name: string,
+  skin: string,
 }
 
 type ListenerKey = "close"
@@ -16,6 +17,7 @@ class Player {
   name: string;
   photo: string | undefined;
   score: number = 0;
+  skin: string;
   isReady: boolean = false;
   isPrepared: boolean = false;
   receivedMap: boolean = false;
@@ -27,10 +29,11 @@ class Player {
   killOrder: NodeJS.Timer | null = null;
   lastResponseTimeStamp: number | null = null;
   constructor(option: PlayerConstructor) {
-    const {ws, id, name} = option;
+    const {ws, id, name, skin} = option;
     this.client = ws;
     this.id = id;
     this.name = name;
+    this.skin = skin;
     
     this.client.addListener("message", () => {
       this.lastResponseTimeStamp = Date.now();

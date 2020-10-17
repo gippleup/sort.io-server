@@ -79,3 +79,13 @@ export const informRematchAccepted = () => JSON.stringify({
 export const informPrepareRematch = () => JSON.stringify({
   type: SocketServerMessageTypes.INFORM_PREPARE_REMATCH,
 })
+
+type SendExpressionDataParam = {
+  userId: number;
+  expression: string;
+}
+
+export const sendExpressionData = (param: SendExpressionDataParam) => JSON.stringify({
+  type: SocketServerMessageTypes.SEND_EXPRESSION_DATA,
+  payload: param
+})

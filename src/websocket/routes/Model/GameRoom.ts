@@ -83,6 +83,7 @@ class GameRoom {
     this.getPlayer = this.getPlayer.bind(this);
     this.getOpponent = this.getOpponent.bind(this);
     this.terminateConnections = this.terminateConnections.bind(this);
+    this.sendExpressionData = this.sendExpressionData.bind(this);
   }
 
   removePlayer(userId: number) {
@@ -126,7 +127,7 @@ class GameRoom {
   generateMap() {
     return this.decideDiffiulty()
       .then((difficulty) => {
-        const { question, desc } = generateMultiMap(difficulty);
+        const { question, desc } = generateMultiMap(5);
         this.map = question;
         this.mapDesc = desc;
       })
@@ -146,11 +147,15 @@ class GameRoom {
 
   sendRoomData() {
     const {map, mapDesc, roomId} = this;
-    const playerData = this.players.map((player) => ({
-      name: player.name,
-      id: player.id,
-      photo: player.photo,
-    }))
+    const playerData = this.players.map((player) => {
+      const {name, id, photo, skin} = player;
+      return {
+        name,
+        id,
+        photo,
+        skin,
+      };
+    })
     if (!map || !mapDesc || roomId === undefined) return;
     this.forEachClient((client) => {
       client.send(socketAction.sendRoom({
@@ -469,6 +474,15 @@ class GameRoom {
     this.forEachClient((client) => {
       client.send(socketAction.deleteRoom());
       client.terminate();
+    })
+  }
+  
+  sendExpressionData(userId: number, expression: string) {
+    this.forEachClient((client) => {
+      client.send(socketAction.sendExpressionData({
+        userId,
+        expression,
+      }))
     })
   }
 

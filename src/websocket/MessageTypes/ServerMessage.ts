@@ -15,6 +15,7 @@ export enum SocketServerMessageTypes {
   ALERT_REMATCH_DECLINED = 'ALERT_REMATCH_DECLINED',
   INFORM_REMATCH_ACCEPTED = 'INFORM_REMATCH_ACCEPTED',
   INFORM_PREPARE_REMATCH = 'INFORM_PREPARE_REMATCH',
+  SEND_EXPRESSION_DATA = 'SEND_EXPRESSION_DATA',
 }
 
 export type SyncTimerMessage = {
@@ -34,6 +35,7 @@ export type SendRoomMessage = {
       name: string;
       id: number;
       photo: string;
+      skin: string;
     }[];
   }
 }
@@ -99,6 +101,14 @@ export type InformPrepareRematch = {
   type: SocketServerMessageTypes.INFORM_PREPARE_REMATCH,
 }
 
+export type SendExpressionData = {
+  type: SocketServerMessageTypes.SEND_EXPRESSION_DATA,
+  payload: {
+    userId: number,
+    expression: string,
+  }
+}
+
 export type SocketServerMessages =
   SyncTimerMessage
   | SendRoomMessage
@@ -114,3 +124,4 @@ export type SocketServerMessages =
   | AlertRematchDeclined
   | InformRematchAccepted
   | InformPrepareRematch
+  | SendExpressionData
