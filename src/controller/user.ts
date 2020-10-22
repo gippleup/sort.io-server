@@ -63,7 +63,7 @@ const controller: UserController = {
   },
   gold: {
     get: async(req, res) => {
-      const {userId} = req.query
+      const {userId} = req.query;
       const user = await getUserById(Number(userId));
       const gold = user?.gold;
       res.send(gold);

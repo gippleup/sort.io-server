@@ -26,7 +26,7 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
 
   const rankQuery = `
     SELECT
-      user.id as userId,
+      user.id,
       user.name,
       user.profileImg as photo,
       S.createdAt,
@@ -41,14 +41,16 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
     .query(rankQuery).then((data) => {
       let targetUser;
       let targetIndex;
+
       for (let i = 0; i < data.length; i += 1) {
         const curRow = data[i];
-        if (curRow.userId === id) {
+        if (curRow.id === id) {
           targetUser = curRow;
           targetIndex = i;
           break;
         }
       }
+
       if (targetIndex !== undefined) {
         return {
           targetUser,

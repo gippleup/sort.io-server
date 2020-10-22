@@ -19,7 +19,7 @@ export const addPurchaseHistory = async (userId: number, itemDef: ItemDef, price
   const purchaseHistoryRepo = await getRepository(PurchaseHistory);
   if (user) {
     const leftGold = user.gold - price;
-    if (leftGold < 0) throw new Error('Not enough mineral!')
+    if (leftGold < 0) return;
     const purchaseHistory = new PurchaseHistory();
     purchaseHistory.category = category;
     purchaseHistory.userId = userId;

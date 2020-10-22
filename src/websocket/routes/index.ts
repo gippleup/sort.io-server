@@ -61,7 +61,7 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
     gameRoom?.checkPlayerAsLeft(userId);
 
     if (opponent) {
-      gameRoom?.informOpponentHasLeft(userId);
+      gameRoom?.informOpponentHasLeft(opponent.id);
     }
 
     waitingLine.delete(userId);

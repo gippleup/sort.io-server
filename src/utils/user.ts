@@ -1,4 +1,5 @@
 import { getRepository, getConnection } from "typeorm"
+import { PurchaseHistory } from "../entity/PurchaseHistory";
 import { User } from "../entity/User"
 
 export const getUserById = async (id: number) => {
@@ -26,4 +27,8 @@ export const setUserData = async (userId: number, option: Partial<User>) => {
     .set(option)
     .where("id = :userId", { userId })
     .execute()
+}
+
+export const getPurchaseHistory = async (userId: number) => {
+  const purchaseHistoryRepo = getRepository(PurchaseHistory);
 }
