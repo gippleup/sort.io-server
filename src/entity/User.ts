@@ -15,11 +15,11 @@ export class User {
   @CreateDateColumn()
   createdAt!: string;
 
-  @Column("int")
+  @Column({
+    type: "int",
+    default: 500,
+  })
   gold!: number;
-
-  @Column("varchar")
-  items!: string;
 
   @Column("boolean")
   isTemp!: boolean;
@@ -27,7 +27,10 @@ export class User {
   @Column("varchar")
   profileImg!: string;
 
-  @Column("int")
+  @Column({
+    type: "int",
+    default: 3,
+  })
   ticket!: number;
 
   @Column("varchar")
