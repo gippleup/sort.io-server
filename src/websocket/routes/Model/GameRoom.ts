@@ -7,6 +7,7 @@ import { getRepository } from 'typeorm';
 import { MultiPlay } from '../../../entity/MultiPlay';
 import { getMultiPlayRankByUserId } from '../../../utils/multiPlay';
 import { rooms, waitingLine } from '../index';
+import { getUserById, setUserData } from '../../../utils/user';
 
 export type MapDesc = MapOption & { difficulty: number };
 
@@ -34,13 +35,13 @@ class GameRoom {
     this.forEachPlayer((player) => {
       player.addListener("close", () => {
         player.hasLeftGame = true;
-        const opponent = this.players.filter((P) => P.id !== player.id)[0];
+        const opponent = this.getOpponent(player.id);
         this.stopTimer();
         this.stopPrepareTimer();
         this.informOpponentHasLeft(opponent.id);
         if (this.checkIfBothLeft()) {
           delete rooms[this.roomId];
-        } 
+        }
       })
     })
 
@@ -127,7 +128,7 @@ class GameRoom {
   generateMap() {
     return this.decideDiffiulty()
       .then((difficulty) => {
-        const { question, desc } = generateMultiMap(5);
+        const { question, desc } = generateMultiMap(difficulty);
         this.map = question;
         this.mapDesc = desc;
       })
@@ -392,8 +393,17 @@ class GameRoom {
   }
 
   informWinner() {
-    this.forEachClient((client) => {
-      client.send(socketAction.informWinner(this.winner))
+    this.forEachPlayer((player) => {
+      const isWinner = player.id === this.winner;
+      const revenue = isWinner ? 180 : 90;
+      player.client.send(socketAction.informWinner(this.winner));
+      getUserById(player.id)
+      .then((data) => {
+        if (!data) return;
+        setUserData(player.id, {
+          gold: data.gold + revenue,
+        })
+      })
     })
     this.saveResult();
   }
