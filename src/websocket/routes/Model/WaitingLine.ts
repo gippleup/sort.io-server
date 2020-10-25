@@ -2,14 +2,26 @@ import Player from "./Player";
 import mergeSort from "../utils/mergeSort";
 import GameRoom from './GameRoom';
 import {rooms} from '../index'
+import { getMultiPlayRankByUserId } from "../../../utils/multiPlay";
+import { getLineIndex } from "../utils/waitingLine";
 
 class WaitingLine {
-  line: Player[] = [];
+  line: {
+    [index: number]: Player[]
+  } = {};
 
   constructor() {}
 
   add(player: Player) {
-    this.line.push(player);
+    const {lineIndex} = player;
+    if (lineIndex === null) return;
+
+    if (this.line[lineIndex] === undefined) {
+      this.line[lineIndex] = [];
+    }
+
+    this.line[lineIndex].push(player);
+    player.addListener("close", () => this.delete(player));
 
     this.findMatch(player)
       .then((players) => {
@@ -26,12 +38,20 @@ class WaitingLine {
       .catch(() => {})
   }
 
-  delete(player: Player | number) {
-    this.line = this.line.filter((entry) => {
+  async delete(player: Player | number) {
+    let lineIndex = null;
+    if (player instanceof Player) {
+      lineIndex = player.lineIndex;
+    } else {
+      lineIndex = await getLineIndex(player);
+    }
+    if (!lineIndex) return;
+
+    this.line[lineIndex] = this.line[lineIndex].filter((entry) => {
       if (typeof player === 'number') {
         return entry.id !== player;
       } else {
-        return entry !== player
+        return entry.id !== player.id;
       }
     });
     return this;
@@ -39,12 +59,47 @@ class WaitingLine {
 
   findMatch(player: Player) {
     return new Promise<[Player, Player]>((resolve, reject) => {
-      const opponents = this.line.filter((entry) => entry.id !== player.id);
-      const opponent = opponents.pop();
-      if (opponent && opponent !== player) {
-        resolve ([opponent, player]);
-        this.line = this.line
-          .filter((entry) => entry !== player && entry !== opponent)
+      const {lineIndex} = player;
+      if (lineIndex === null) return reject(null);
+      let checkedLineIndex: {[index: number]: boolean} = {};
+      let opponent: undefined | Player;
+      let indiceOnLine = Object.keys(this.line);
+      
+      const getNearestIndexNotChecked = (): number => {
+        let result = -1;
+        const sortedByIndexDiff = indiceOnLine.map((index: string) => {
+          const indexNum = Number(index);
+          const diff = Math.abs(indexNum - lineIndex);
+          return {
+            index: indexNum,
+            diff,
+          }
+        }).sort((a, b) => a.diff - b.diff);
+
+        for (let i = 0; i < sortedByIndexDiff.length; i += 1) {
+          const ele = sortedByIndexDiff[i];
+          if (!checkedLineIndex[ele.index]) {
+            result = ele.index;
+          }
+        }
+
+        return result;
+      }
+
+      while (!opponent && Object.keys(checkedLineIndex).length !== indiceOnLine.length) {
+        const indexToCheck = getNearestIndexNotChecked();
+        const targetLine = this.line[indexToCheck];
+        targetLine.forEach((entry) => {
+          if (entry.id !== player.id) {
+            opponent = entry;
+          };
+        })
+        checkedLineIndex[indexToCheck] = true;
+      }
+
+      if (opponent) {
+        this.delete(opponent);
+        resolve([opponent, player])
       } else {
         reject(null);
       }

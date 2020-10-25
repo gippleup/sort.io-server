@@ -1,6 +1,7 @@
 import Ws from 'ws';
 import { waitingLine } from '..';
 import { getUserById } from '../../../utils/user';
+import { getLineIndex } from '../utils/waitingLine';
 
 type PlayerConstructor = {
   ws: Ws,
@@ -22,6 +23,7 @@ class Player {
   isPrepared: boolean = false;
   receivedMap: boolean = false;
   hasLeftGame: boolean = false;
+  lineIndex: null | number = null;
   listener: {[K in ListenerKey]: {[index: number]: (id: number) => any}} = {
     close: {}
   }
@@ -46,6 +48,13 @@ class Player {
   fetchProfileImg() {
     return getUserById(this.id).then((user) => {
       this.photo = user?.profileImg;
+    })
+  }
+
+  fetchLineIndex() {
+    return getLineIndex(this.id)
+    .then((lineIndex) => {
+      this.lineIndex = lineIndex;
     })
   }
 

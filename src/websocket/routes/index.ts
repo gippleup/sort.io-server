@@ -24,6 +24,7 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
     })
 
     await newPlayer.fetchProfileImg();
+    await newPlayer.fetchLineIndex();
     waitingLine.add(newPlayer)
   }
 
@@ -262,7 +263,7 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
     gameRoom?.sendExpressionData(userId, expression);
   }
 
-  console.log(parsedMessage);
+  // console.log(parsedMessage);
   // if (parsedMessage.type !== MessageTypes.DOCK) {
   //   console.log(waitingLine);
   // console.log('rooms', rooms);
