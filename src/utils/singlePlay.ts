@@ -2,6 +2,16 @@ import { SinglePlay } from "../entity/SinglePlay";
 import { getRepository, getConnection } from "typeorm";
 import { User } from "../entity/User";
 
+type RawUserRankData = {
+  id: number;
+  name: string;
+  photo: string;
+  createdAt: null;
+  difficulty: string;
+  rank: string;
+  rate: string;
+}
+
 export const getSinglePlayByUserId = (id: number) => {
   const singleRepo = getRepository(SinglePlay);
   const games = singleRepo.createQueryBuilder("single_play")
@@ -37,8 +47,21 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
       user LEFT JOIN (${lastGameTable}) AS last_game ON user.id = last_game.userId
       LEFT JOIN single_play AS S ON S.id = last_game.gameId
   `;
-  const userRank = await getConnection()
-    .query(rankQuery).then((data) => {
+
+  const targetUserRow: RawUserRankData[] = await getConnection()
+  .query(`
+    SELECT * FROM (${rankQuery}) as t1
+    WHERE t1.id=${id}
+  `);
+
+  if (!targetUserRow) return null;
+  const rank = Number(targetUserRow[0].rank);
+
+  const paddedRankTable = await getConnection()
+    .query(`
+      SELECT * FROM (${rankQuery}) as t1
+      WHERE t1.rank <= ${rank + padding} AND t1.rank >= ${rank - padding}
+    `).then((data) => {
       let targetUser;
       let targetIndex;
 
@@ -62,5 +85,5 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
         return 'NO SUCH USER'
       }
     })
-  return userRank;
+  return paddedRankTable;
 }

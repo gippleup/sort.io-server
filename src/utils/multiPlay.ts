@@ -48,6 +48,24 @@ type MultiPlayRankReturnData = {
   total: number;
 };
 
+const convertMultiPlayRankRow = (row: RawMultiPlayRankData): ConvertedMultiPlayRankData => {
+  const {KBI, draw, lose, name, rank, rate, total, createdAt, id, win, winningRate, photo} = row;
+  return {
+    id,
+    name,
+    createdAt,
+    win: Number(win),
+    draw: Number(draw),
+    lose: Number(lose),
+    total,
+    winningRate,
+    KBI: KBI,
+    rank: Number(rank),
+    rate: Number(rate),
+    photo
+  }
+}
+
 export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise<MultiPlayRankReturnData | null> => {
   const userRepo = getRepository(User);
   const totalUser = await userRepo
@@ -99,70 +117,66 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
     ROUND(LOG(@total) * @rate * 100) AS KBI
   `
 
-  const userRank = getConnection().query(`
-  SELECT
+  const userRankQuery = `
+    SELECT
       *,
       @rank := ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt DESC) AS 'rank',
       ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt DESC) / ${totalUser} AS 'rate'
-  FROM
-    (SELECT
-      user.id,
-      user.name,
-      user.createdAt,
-      IFNULL(multiGameRecord.win, 0) as win,
-      IFNULL(multiGameRecord.draw, 0) as draw,
-      IFNULL(multiGameRecord.lose, 0) as lose,
-      IFNULL(multiGameRecord.total, 0) as total,
-      IFNULL(multiGameRecord.winningRate, 0) as winningRate,
-      IFNULL(multiGameRecord.KBI, 0) as KBI,
-      user.profileImg as photo
-    FROM user
-      LEFT JOIN
-        (SELECT
-          ${targetValues}
-        FROM (${winTableQuery}) AS t1
-          LEFT JOIN (${drawTableQuery}) AS t2 ON t1.userId = t2.userId
-          LEFT JOIN (${loseTableQuery}) AS t3 ON t1.userId = t3.userId
-        UNION ALL
-        SELECT
-          ${targetValues}
-        FROM (${drawTableQuery}) AS t2
-          LEFT JOIN (${winTableQuery}) AS t1 ON t2.userId = t1.userId
-          LEFT JOIN (${loseTableQuery}) AS t3 ON t2.userId = t3.userId
-        WHERE t1.userId IS NULL
-        UNION ALL
-        SELECT
-          ${targetValues}
-        FROM (${loseTableQuery}) AS t3
-          LEFT JOIN (${winTableQuery}) AS t1 ON t3.userId = t1.userId
-          LEFT JOIN (${drawTableQuery}) AS t2 ON t3.userId = t2.userId
-        WHERE t1.userId IS NULL AND t2.userId IS NULL
-        ) AS multiGameRecord
-      ON user.id = multiGameRecord.userId
+    FROM
+      (SELECT
+        user.id,
+        user.name,
+        user.createdAt,
+        IFNULL(multiGameRecord.win, 0) as win,
+        IFNULL(multiGameRecord.draw, 0) as draw,
+        IFNULL(multiGameRecord.lose, 0) as lose,
+        IFNULL(multiGameRecord.total, 0) as total,
+        IFNULL(multiGameRecord.winningRate, 0) as winningRate,
+        IFNULL(multiGameRecord.KBI, 0) as KBI,
+        user.profileImg as photo
+      FROM user
+        LEFT JOIN
+          (SELECT
+            ${targetValues}
+          FROM (${winTableQuery}) AS t1
+            LEFT JOIN (${drawTableQuery}) AS t2 ON t1.userId = t2.userId
+            LEFT JOIN (${loseTableQuery}) AS t3 ON t1.userId = t3.userId
+          UNION ALL
+          SELECT
+            ${targetValues}
+          FROM (${drawTableQuery}) AS t2
+            LEFT JOIN (${winTableQuery}) AS t1 ON t2.userId = t1.userId
+            LEFT JOIN (${loseTableQuery}) AS t3 ON t2.userId = t3.userId
+          WHERE t1.userId IS NULL
+          UNION ALL
+          SELECT
+            ${targetValues}
+          FROM (${loseTableQuery}) AS t3
+            LEFT JOIN (${winTableQuery}) AS t1 ON t3.userId = t1.userId
+            LEFT JOIN (${drawTableQuery}) AS t2 ON t3.userId = t2.userId
+          WHERE t1.userId IS NULL AND t2.userId IS NULL
+          ) AS multiGameRecord
+        ON user.id = multiGameRecord.userId
       ) AS record
-  ORDER BY 'rank' DESC
+    ORDER BY 'rank' DESC
+  `
+
+  const targetUserRow: RawMultiPlayRankData[] = await getConnection().query(`
+    SELECT * FROM (${userRankQuery}) AS t1
+    WHERE t1.id=${id}
+  `);
+
+  if (!targetUserRow) return null;
+  const rank = Number(targetUserRow[0].rank);
+
+  const paddedRankTable = getConnection().query(`
+    SELECT * FROM (${userRankQuery}) AS t1
+    WHERE t1.rank <= ${rank + padding} AND t1.rank >= ${rank - padding}
   `).then((data: RawMultiPlayRankData[]) => {
-    const convertedData: ConvertedMultiPlayRankData[] = data.map((row) => {
-      const {KBI, draw, lose, name, rank, rate, total, createdAt, id, win, winningRate, photo} = row;
-      return {
-        id,
-        name,
-        createdAt,
-        win: Number(win),
-        draw: Number(draw),
-        lose: Number(lose),
-        total,
-        winningRate,
-        KBI: KBI,
-        rank: Number(rank),
-        rate: Number(rate),
-        photo
-      }
-    })
-    let targetUser: undefined | ConvertedMultiPlayRankData;
+    let targetUser: undefined | RawMultiPlayRankData;
     let targetIndex;
-    for (let i = 0; i < convertedData.length; i += 1) {
-      const curRow = convertedData[i];
+    for (let i = 0; i < data.length; i += 1) {
+      const curRow = data[i];
       if (curRow.id === id) {
         targetUser = curRow;
         targetIndex = i;
@@ -170,16 +184,19 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
       }
     }
     if (targetUser && targetIndex !== undefined) {
-      return {
-        targetUser,
-        beforeTargetUser: convertedData.slice(Math.max(0, targetIndex - padding), targetIndex),
-        afterTargetUser: convertedData.slice(targetIndex + 1, Math.min(data.length, targetIndex + 1 + padding)),
+      const beforeTargetUser = data.slice(Math.max(0, targetIndex - padding), targetIndex);
+      const afterTargetUser = data.slice(targetIndex + 1, Math.min(data.length, targetIndex + 1 + padding));
+      const slicedData = {
+        targetUser: convertMultiPlayRankRow(targetUser),
+        beforeTargetUser: beforeTargetUser.map(convertMultiPlayRankRow),
+        afterTargetUser: afterTargetUser.map(convertMultiPlayRankRow),
         total: totalUser
       };
+      return slicedData;
     } else {
       return null
     }
   })
 
-  return userRank;
+  return paddedRankTable;
 }
