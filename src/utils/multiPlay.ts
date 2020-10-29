@@ -114,7 +114,7 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
     @lose := IFNULL(t3.lose, 0) as lose,
     @total := @win + @draw + @lose AS total,
     @rate := @win / @total AS winningRate,
-    ROUND(LOG(@total) * @rate * 100) AS KBI
+    ROUND(LOG2(@total + 1) * @rate * 100) AS KBI
   `
 
   const userRankQuery = `
