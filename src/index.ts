@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
-app.use('/', router);
+app.use('/colormatch/server', router);
 
 const server = app.listen(PORT, () => {
   console.log(chalk`Server started listening on {bold.green http://localhost:${PORT}}`)
