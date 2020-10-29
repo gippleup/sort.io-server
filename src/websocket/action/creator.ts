@@ -80,6 +80,10 @@ export const informPrepareRematch = () => JSON.stringify({
   type: SocketServerMessageTypes.INFORM_PREPARE_REMATCH,
 })
 
+export const ping = () => JSON.stringify({
+  type: SocketServerMessageTypes.PING,
+})
+
 type SendExpressionDataParam = {
   userId: number;
   expression: string;

@@ -16,6 +16,7 @@ export enum SocketServerMessageTypes {
   INFORM_REMATCH_ACCEPTED = 'INFORM_REMATCH_ACCEPTED',
   INFORM_PREPARE_REMATCH = 'INFORM_PREPARE_REMATCH',
   SEND_EXPRESSION_DATA = 'SEND_EXPRESSION_DATA',
+  PING = 'PING',
 }
 
 export type SyncTimerMessage = {
@@ -109,6 +110,10 @@ export type SendExpressionData = {
   }
 }
 
+export type Ping = {
+  type: SocketServerMessageTypes.PING,
+}
+
 export type SocketServerMessages =
   SyncTimerMessage
   | SendRoomMessage
@@ -125,3 +130,4 @@ export type SocketServerMessages =
   | InformRematchAccepted
   | InformPrepareRematch
   | SendExpressionData
+  | Ping

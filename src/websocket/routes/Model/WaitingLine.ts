@@ -21,7 +21,9 @@ class WaitingLine {
     }
 
     this.line[lineIndex].push(player);
-    player.addListener("close", () => this.delete(player));
+    player.addListener("close", () => {
+      this.delete(player)
+    });
 
     this.findMatch(player)
       .then((players) => {
@@ -45,8 +47,8 @@ class WaitingLine {
     } else {
       lineIndex = await getLineIndex(player);
     }
-    if (!lineIndex) return;
-
+    if (lineIndex === null) return;
+    
     this.line[lineIndex] = this.line[lineIndex].filter((entry) => {
       if (typeof player === 'number') {
         return entry.id !== player;
@@ -54,6 +56,7 @@ class WaitingLine {
         return entry.id !== player.id;
       }
     });
+
     return this;
   }
 
@@ -98,8 +101,17 @@ class WaitingLine {
       }
 
       if (opponent) {
-        this.delete(opponent);
-        resolve([opponent, player])
+        opponent.sendPing();
+        setTimeout(() => {
+          if (opponent?.isAlive) {
+            this.delete(opponent);
+            resolve([opponent, player])
+          } else {
+            opponent?.client.close();
+            opponent?.deleteSelfFromWaitingLine();
+            reject(null);
+          }
+        }, 1000)
       } else {
         reject(null);
       }

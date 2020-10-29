@@ -2,6 +2,8 @@ import Ws from 'ws';
 import { waitingLine } from '..';
 import { getUserById } from '../../../utils/user';
 import { getLineIndex } from '../utils/waitingLine';
+import * as socketActions from '../../action/creator';
+import { SocketClientMessages, SocketClientMessageTypes } from '../../MessageTypes/ClientMessage';
 
 type PlayerConstructor = {
   ws: Ws,
@@ -19,6 +21,7 @@ class Player {
   photo: string | undefined;
   score: number = 0;
   skin: string;
+  isAlive: boolean = true;
   isReady: boolean = false;
   isPrepared: boolean = false;
   receivedMap: boolean = false;
@@ -43,19 +46,39 @@ class Player {
 
     this.reset = this.reset.bind(this);
     this.fetchProfileImg = this.fetchProfileImg.bind(this);
+    this.startCheckVital = this.startCheckVital.bind(this);
+
+    this.client.on("message", (data) => {
+      if (typeof data === "string") {
+        const parsedData: SocketClientMessages = JSON.parse(data);
+        if (parsedData.type === SocketClientMessageTypes.PONG) {
+          this.isAlive = true;
+        }
+      }
+    })
+
+    this.startCheckVital();
   }
 
   fetchProfileImg() {
-    return getUserById(this.id).then((user) => {
-      this.photo = user?.profileImg;
-    })
+    try {
+      getUserById(this.id).then((user) => {
+        return this.photo = user?.profileImg;
+      })
+    } catch(e) {
+      return null;
+    }
   }
 
   fetchLineIndex() {
-    return getLineIndex(this.id)
-    .then((lineIndex) => {
-      this.lineIndex = lineIndex;
-    })
+    try {
+      return getLineIndex(this.id)
+      .then((lineIndex) => {
+        this.lineIndex = lineIndex;
+      })
+    } catch(e) {
+      return null;
+    }
   }
 
   deleteSelfFromWaitingLine() {
@@ -102,6 +125,22 @@ class Player {
     if (this.killOrder) {
       clearTimeout(this.killOrder)
     }
+  }
+
+  sendPing() {
+    this.isAlive = false;
+    this.client.send(socketActions.ping());
+  }
+
+  startCheckVital() {
+    const interval = setInterval(() => {
+      if (!this.isAlive) {
+        this.client.close();
+        this.deleteSelfFromWaitingLine();
+        clearInterval(interval);
+      }
+      this.sendPing();
+    }, 5000)
   }
 }
 
