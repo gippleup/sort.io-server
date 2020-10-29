@@ -9,7 +9,7 @@ const matchServer = new Ws.Server({ noServer: true });
 export const handleUpgrade = (server: Server) => {
   server.on('upgrade', (req: Request, socket: Socket, head) => {
     const pathname = url.parse(req.url).pathname;
-    if (pathname === '/match') {
+    if (pathname === '/colormatch/server/match') {
       matchServer.handleUpgrade(req, socket, head, (ws) => {
         matchServer.emit('connection', ws, req);
         ws.on('message', (message) => {
