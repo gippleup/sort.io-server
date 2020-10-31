@@ -26,6 +26,7 @@ class Player {
   isPrepared: boolean = false;
   receivedMap: boolean = false;
   hasLeftGame: boolean = false;
+  foundMatch: boolean = false;
   lineIndex: null | number = null;
   listener: {[K in ListenerKey]: {[index: number]: (id: number) => any}} = {
     close: {}
@@ -140,7 +141,7 @@ class Player {
         clearInterval(interval);
       }
       this.sendPing();
-    }, 5000)
+    }, 10000)
   }
 }
 

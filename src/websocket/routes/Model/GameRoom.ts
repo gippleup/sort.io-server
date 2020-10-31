@@ -42,7 +42,8 @@ class GameRoom {
         if (this.checkIfBothLeft()) {
           delete rooms[this.roomId];
         }
-      })
+      });
+      player.foundMatch = true;
     })
 
     this.removePlayer = this.removePlayer.bind(this);

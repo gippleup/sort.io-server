@@ -103,7 +103,7 @@ class WaitingLine {
       if (opponent) {
         opponent.sendPing();
         setTimeout(() => {
-          if (opponent?.isAlive) {
+          if (opponent?.isAlive && !opponent.foundMatch) {
             this.delete(opponent);
             resolve([opponent, player])
           } else {
