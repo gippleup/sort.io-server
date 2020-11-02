@@ -21,7 +21,7 @@ class GameRoom {
   gameDuration: number = 120;
   interval: NodeJS.Timer | undefined;
   leftTime: number = this.gameDuration;
-  leftPrepareTime: number = 3;
+  leftPrepareTime: number = 0;
   prepareTimer: NodeJS.Timer | undefined;
   fps: number = 1;
   rematchRequestOngoing: boolean = false;
@@ -327,7 +327,7 @@ class GameRoom {
     this.stopPrepareTimer();
     this.leftTime = this.gameDuration;
     this.timeFinished = false;
-    this.leftPrepareTime = 3;
+    this.leftPrepareTime = 0;
   }
 
   resetGameRoom() {
