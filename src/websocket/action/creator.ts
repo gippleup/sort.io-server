@@ -13,8 +13,9 @@ export const sendRoom = (param: SendRoomParams) => JSON.stringify({
   payload: param,
 })
 
-export const informOpponentHasLeft = () => JSON.stringify({
-  type: SocketServerMessageTypes.INFORM_OPPONENT_HAS_LEFT
+export const informOpponentHasLeft = (passedGoodTime: boolean) => JSON.stringify({
+  type: SocketServerMessageTypes.INFORM_OPPONENT_HAS_LEFT,
+  payload: passedGoodTime,
 })
 
 export const syncTimer = (leftTime: number) => JSON.stringify({

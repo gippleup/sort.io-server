@@ -346,8 +346,13 @@ class GameRoom {
   }
 
   informOpponentHasLeft(userId: number) {
-    const message = socketAction.informOpponentHasLeft();
-    this.getPlayer(userId).client.send(message)
+    const passedGoodTime = (this.gameDuration || 0) - (this.leftTime || 0) >= 30;
+    const message = socketAction.informOpponentHasLeft(passedGoodTime);
+    this.getPlayer(userId).client.send(message);
+    if (passedGoodTime) {
+      this.checkWinner(userId);
+      this.endGame();
+    }
   }
 
   checkWinner(winner?: number) {

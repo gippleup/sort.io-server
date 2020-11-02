@@ -49,13 +49,16 @@ class WaitingLine {
     }
     if (lineIndex === null) return;
     
-    this.line[lineIndex] = this.line[lineIndex].filter((entry) => {
-      if (typeof player === 'number') {
-        return entry.id !== player;
-      } else {
-        return entry.id !== player.id;
-      }
-    });
+    const targetLine = this.line[lineIndex];
+    if (targetLine) {
+      this.line[lineIndex] = this.line[lineIndex].filter((entry) => {
+       if (typeof player === 'number') {
+         return entry.id !== player;
+       } else {
+         return entry.id !== player.id;
+       }
+     });
+    }
 
     return this;
   }

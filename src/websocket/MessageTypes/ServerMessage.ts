@@ -43,6 +43,7 @@ export type SendRoomMessage = {
 
 export type InformOpponentHasLeft = {
   type: SocketServerMessageTypes.INFORM_OPPONENT_HAS_LEFT,
+  payload: boolean;
 }
 
 export type AlertDockConstructor = {

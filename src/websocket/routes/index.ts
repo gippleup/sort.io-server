@@ -89,13 +89,8 @@ const baseController = async (message: Ws.Data, ws: Ws, wss: Ws.Server) => {
       gameRoom?.stopTimer();
       gameRoom?.stopPrepareTimer();
       const opponent = gameRoom?.players.filter((P) => P.id !== userId)[0];
-      const passedGoodTime = (gameRoom?.gameDuration || 0) - (gameRoom?.leftTime || 0) >= 30;
       if (opponent) {
         gameRoom?.informOpponentHasLeft(opponent.id);
-        if (passedGoodTime) {
-          gameRoom?.checkWinner(opponent.id);
-          gameRoom?.endGame();
-        }
       }
     }
 
