@@ -120,8 +120,8 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
   const userRankQuery = `
     SELECT
       *,
-      @rank := ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt DESC) AS 'rank',
-      ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt DESC) / ${totalUser} AS 'rate'
+      @rank := ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt ASC) AS 'rank',
+      ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt ASC) / ${totalUser} AS 'rate'
     FROM
       (SELECT
         user.id,
