@@ -459,7 +459,9 @@ class GameRoom {
   }
 
   checkIfSomeLeft() {
-    return this.players.filter((player) => player.hasLeftGame).length !== 0;
+    return this.players.filter((player) => {
+      return player.hasLeftGame || player.client.readyState === player.client.CLOSED;
+    }).length !== 0;
   }
 
   getLeftPlayer() {
