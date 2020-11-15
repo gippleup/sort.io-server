@@ -44,7 +44,7 @@ function generateMultiMap(difficulty: 1 | 2 | 3 | 4 | 5) {
     blockStackCount,
     colorCount,
     maxScore,
-    stackLengthMax: 8,
+    stackLengthMax: 7,
     stackLengthMin: 5,
     shuffleCount: 100,
   }
