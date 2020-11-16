@@ -3,7 +3,8 @@ import { SinglePlay } from "../entity/SinglePlay"
 import { getRepository, createQueryBuilder, getConnection } from "typeorm";
 import { MultiPlay } from "../entity/MultiPlay";
 import { User } from "../entity/User";
-import { getMultiPlayRankByUserId } from "../utils/multiPlay";
+import { getMultiPlayRankByUserId, getMultiPlayRankFromTo } from "../utils/multiPlay";
+import { convertTimeToMs } from "../utils/generic";
 
 type MultiPlayControllerTypes = "save" | "rank";
 
@@ -37,10 +38,20 @@ const controller: MultiPlayController = {
     }
   },
   rank: async (req, res) => {
-    const userId = Number(req.query.userId);
-    const padding = Number(req.query.padding || 3);
-    const userRank = await getMultiPlayRankByUserId(userId, padding);
-    res.send(userRank);
+    const userId = req.query.userId;
+    const padding = req.query.padding || 3;
+    if (userId !== undefined) {
+      const userRank = await getMultiPlayRankByUserId(Number(userId), Number(padding));
+      return res.send(userRank);
+    }
+
+    const from = req.query.from || 0;
+    const to = req.query.to;
+    const recent = req.query.recent || 7;
+    if (from !== undefined && to !== undefined) {
+      const rankTable = await getMultiPlayRankFromTo(Number(from), Number(to), Number(recent));
+      return res.send(rankTable);
+    }
   }
 }
 

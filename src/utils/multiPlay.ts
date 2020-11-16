@@ -2,6 +2,7 @@ import { SinglePlay } from "../entity/SinglePlay";
 import { getRepository, getConnection } from "typeorm";
 import { MultiPlay } from "../entity/MultiPlay";
 import { User } from "../entity/User";
+import { convertTimeToMs } from "./generic";
 
 export const getMultiPlayByUserId = (id: number) => {
   const multiRepo = getRepository(MultiPlay);
@@ -15,6 +16,7 @@ type RawMultiPlayRankData = {
   id: number,
   name: string,
   createdAt: string,
+  gameCreatedAt: string,
   win: string,
   draw: string,
   lose: string,
@@ -26,51 +28,30 @@ type RawMultiPlayRankData = {
   photo: string,
 }
 
-type ConvertedMultiPlayRankData = {
-  id: number,
-  name: string,
-  createdAt: string,
-  win: number,
-  draw: number,
-  lose: number,
-  total: number,
-  winningRate: number,
-  KBI: number,
-  rank: number,
-  rate: number,
-  photo: string,
-}
-
 type MultiPlayRankReturnData = {
-  targetUser: ConvertedMultiPlayRankData;
-  beforeTargetUser: ConvertedMultiPlayRankData[];
-  afterTargetUser: ConvertedMultiPlayRankData[];
+  targetUser: RawMultiPlayRankData;
+  beforeTargetUser: RawMultiPlayRankData[];
+  afterTargetUser: RawMultiPlayRankData[];
   total: number;
 };
 
-const convertMultiPlayRankRow = (row: RawMultiPlayRankData): ConvertedMultiPlayRankData => {
-  const {KBI, draw, lose, name, rank, rate, total, createdAt, id, win, winningRate, photo} = row;
-  return {
-    id,
-    name,
-    createdAt,
-    win: Number(win),
-    draw: Number(draw),
-    lose: Number(lose),
-    total,
-    winningRate,
-    KBI: KBI,
-    rank: Number(rank),
-    rate: Number(rate),
-    photo
-  }
+export type RankTableQueryOption = {
+  type: "all"
+} | {
+  type: "recent",
+  recent: number,
 }
 
-export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise<MultiPlayRankReturnData | null> => {
+const getMultiPlayRankQuery = async (option: RankTableQueryOption) => {
+  const fromDate = option.type === "recent" ? Date.now() - convertTimeToMs({day: option.recent}) : null;
   const userRepo = getRepository(User);
   const totalUser = await userRepo
     .createQueryBuilder("user")
     .getCount();
+
+  const dateQuery = fromDate !== null
+    ? `WHERE UNIX_TIMESTAMP(record.gameCreatedAt) >= ${fromDate / 1000}`
+    : "";
 
   const tableQueryFor = (type: 'win' | 'lose' | 'draw') => {
     const conditionQuery =  {
@@ -84,12 +65,14 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
       playRecord.userId,
       playRecord.name,
       playRecord.userCreatedAt,
+      playRecord.gameCreatedAt,
       COUNT(playRecord.userId) AS ${type}
     FROM
       (SELECT
         user.id as userId,
         user.name,
         user.createdAt as userCreatedAt,
+        multi.createdAt as gameCreatedAt,
         multi.winner
       FROM
         user LEFT JOIN multi_play as multi
@@ -109,6 +92,7 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
     IFNULL(t1.userId, IFNULL(t2.userId, t3.userId)) as userId,
     IFNULL(t1.name, IFNULL(t2.name, t3.name)) as name,
     IFNULL(t1.userCreatedAt, IFNULL(t2.userCreatedAt, t3.userCreatedAt)) as userCreatedAt,
+    IFNULL(t1.gameCreatedAt, IFNULL(t2.gameCreatedAt, t3.gameCreatedAt)) as gameCreatedAt,
     @win := IFNULL(t1.win, 0) as win,
     @draw := IFNULL(t2.draw, 0) as draw,
     @lose := IFNULL(t3.lose, 0) as lose,
@@ -120,13 +104,14 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
   const userRankQuery = `
     SELECT
       *,
-      @rank := ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt ASC) AS 'rank',
-      ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.createdAt ASC) / ${totalUser} AS 'rate'
+      @rank := ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.gameCreatedAt DESC) AS 'rank',
+      ROW_NUMBER() OVER (ORDER BY record.KBI DESC, record.gameCreatedAt DESC) / ${totalUser} AS 'rate'
     FROM
       (SELECT
         user.id,
         user.name,
         user.createdAt,
+        multiGameRecord.gameCreatedAt,
         IFNULL(multiGameRecord.win, 0) as win,
         IFNULL(multiGameRecord.draw, 0) as draw,
         IFNULL(multiGameRecord.lose, 0) as lose,
@@ -158,19 +143,33 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
           ) AS multiGameRecord
         ON user.id = multiGameRecord.userId
       ) AS record
+    ${dateQuery}
     ORDER BY 'rank' DESC
   `
 
+  return userRankQuery
+}
+
+export const getMultiPlayRankByUserId = async (
+  id: number,
+  padding: number = 3,
+): Promise<MultiPlayRankReturnData | null> => {
+  const userRepo = getRepository(User);
+  const totalUser = await userRepo
+    .createQueryBuilder("user")
+    .getCount();
+  const rankTableQuery = await getMultiPlayRankQuery({type: "all"})
+
   const targetUserRow: RawMultiPlayRankData[] = await getConnection().query(`
-    SELECT * FROM (${userRankQuery}) AS t1
+    SELECT * FROM (${rankTableQuery}) AS t1
     WHERE t1.id=${id}
   `);
 
-  if (!targetUserRow) return null;
+  if (!targetUserRow.length) return null;
   const rank = Number(targetUserRow[0].rank);
 
-  const paddedRankTable = getConnection().query(`
-    SELECT * FROM (${userRankQuery}) AS t1
+  const paddedRankTable = await getConnection().query(`
+    SELECT * FROM (${rankTableQuery}) AS t1
     WHERE t1.rank <= ${rank + padding} AND t1.rank >= ${rank - padding}
   `).then((data: RawMultiPlayRankData[]) => {
     let targetUser: undefined | RawMultiPlayRankData;
@@ -187,9 +186,9 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
       const beforeTargetUser = data.slice(Math.max(0, targetIndex - padding), targetIndex);
       const afterTargetUser = data.slice(targetIndex + 1, Math.min(data.length, targetIndex + 1 + padding));
       const slicedData = {
-        targetUser: convertMultiPlayRankRow(targetUser),
-        beforeTargetUser: beforeTargetUser.map(convertMultiPlayRankRow),
-        afterTargetUser: afterTargetUser.map(convertMultiPlayRankRow),
+        targetUser: targetUser,
+        beforeTargetUser: beforeTargetUser,
+        afterTargetUser: afterTargetUser,
         total: totalUser
       };
       return slicedData;
@@ -199,4 +198,20 @@ export const getMultiPlayRankByUserId = async (id: number, padding = 3): Promise
   })
 
   return paddedRankTable;
+}
+
+
+export const getMultiPlayRankFromTo = async (
+  from: number,
+  to: number,
+  recent: number
+): Promise<RawMultiPlayRankData[] | null> => {
+  const rankTableQuery = await getMultiPlayRankQuery({type: "recent", recent})
+
+  const rankTable: RawMultiPlayRankData[] = await getConnection().query(`
+    SELECT * FROM (${rankTableQuery}) AS t1
+    LIMIT ${from}, ${to - from}
+  `)
+
+  return rankTable;
 }

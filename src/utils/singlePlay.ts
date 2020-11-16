@@ -1,6 +1,8 @@
 import { SinglePlay } from "../entity/SinglePlay";
 import { getRepository, getConnection } from "typeorm";
 import { User } from "../entity/User";
+import { convertTimeToMs } from "./generic";
+import { RankTableQueryOption } from "./multiPlay";
 
 type RawUserRankData = {
   id: number;
@@ -20,11 +22,16 @@ export const getSinglePlayByUserId = (id: number) => {
   return games;
 }
 
-export const getSinglePlayRankByUserId = async (id: number, padding: number = 3) => {
+const getSinglePlayRankQuery = async (option: RankTableQueryOption) => {
+  const fromDate = option.type === "recent" ? Date.now() - convertTimeToMs({day: option.recent}) : null;
   const userRepo = getRepository(User);
   const totalUser = await userRepo
     .createQueryBuilder("user")
     .getCount();
+
+  const dateQuery = fromDate !== null
+    ? `WHERE UNIX_TIMESTAMP(S.createdAt) >= ${fromDate / 1000}`
+    : "";
 
   const lastGameTable = `
     SELECT
@@ -34,7 +41,7 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
     GROUP BY single.userId
   `;
 
-  const rankQuery = `
+  const rankTableQuery = `
     SELECT
       user.id,
       user.name,
@@ -46,11 +53,25 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
     FROM
       user LEFT JOIN (${lastGameTable}) AS last_game ON user.id = last_game.userId
       LEFT JOIN single_play AS S ON S.id = last_game.gameId
-  `;
+    ${dateQuery}
+  `;  
+
+  return rankTableQuery;
+}
+
+export const getSinglePlayRankByUserId = async (
+  id: number,
+  padding = 3,
+) => {
+  const userRepo = getRepository(User);
+  const totalUser = await userRepo
+    .createQueryBuilder("user")
+    .getCount();
+  const rankTableQuery = await getSinglePlayRankQuery({type: "all"});
 
   const targetUserRow: RawUserRankData[] = await getConnection()
   .query(`
-    SELECT * FROM (${rankQuery}) as t1
+    SELECT * FROM (${rankTableQuery}) as t1
     WHERE t1.id=${id}
   `);
 
@@ -59,7 +80,7 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
 
   const paddedRankTable = await getConnection()
     .query(`
-      SELECT * FROM (${rankQuery}) as t1
+      SELECT * FROM (${rankTableQuery}) as t1
       WHERE t1.rank <= ${rank + padding} AND t1.rank >= ${rank - padding}
     `).then((data) => {
       let targetUser;
@@ -86,4 +107,20 @@ export const getSinglePlayRankByUserId = async (id: number, padding: number = 3)
       }
     })
   return paddedRankTable;
+}
+
+export const getSinglePlayRankFromTo = async (
+  from: number,
+  to: number,
+  recent: number = 7,
+) => {
+  const rankTableQuery = await getSinglePlayRankQuery({type: "recent", recent})
+
+  const rankTable: RawUserRankData[] = await getConnection()
+  .query(`
+    SELECT * FROM (${rankTableQuery}) as t1
+    LIMIT ${from}, ${to - from}
+  `);
+
+  return rankTable;
 }
