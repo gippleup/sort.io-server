@@ -8,7 +8,7 @@ type RawUserRankData = {
   id: number;
   name: string;
   photo: string;
-  createdAt: null;
+  createdAt: string;
   difficulty: string;
   rank: string;
   rate: string;
