@@ -3,16 +3,21 @@ import { SinglePlay } from "../entity/SinglePlay"
 import { getRepository, createQueryBuilder, getConnection } from "typeorm";
 import { MultiPlay } from "../entity/MultiPlay";
 import { User } from "../entity/User";
-import { getMultiPlayRankByUserId, getMultiPlayRankFromTo } from "../utils/multiPlay";
+import { getMultiPlayByUserId, getMultiPlayRankByUserId, getMultiPlayRankFromTo } from "../utils/multiPlay";
 import { convertTimeToMs } from "../utils/generic";
 
-type MultiPlayControllerTypes = "save" | "rank";
+type MultiPlayControllerTypes = "save" | "rank" | "data";
 
 type MultiPlayController = {
   [T in MultiPlayControllerTypes]: ExpressController;
 };
 
 const controller: MultiPlayController = {
+  data: async (req, res) => {
+    const {userId} = req.query;
+    const data = await getMultiPlayByUserId(Number(userId));
+    res.send(data);
+  },
   save: async (req, res) => {
     const {
       winner,

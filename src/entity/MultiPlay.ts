@@ -23,3 +23,5 @@ export class MultiPlay {
   @CreateDateColumn()
   createdAt!: string;
 }
+
+export default MultiPlay;

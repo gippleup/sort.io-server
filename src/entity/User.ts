@@ -36,3 +36,5 @@ export class User {
   @Column("varchar")
   googleId!: string;
 }
+
+export default User;

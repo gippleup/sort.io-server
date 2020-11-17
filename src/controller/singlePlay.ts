@@ -2,16 +2,21 @@ import { ExpressController } from "./types"
 import { SinglePlay } from "../entity/SinglePlay"
 import { getRepository, createQueryBuilder, getConnection } from "typeorm";
 import { User } from "../entity/User";
-import { getSinglePlayRankByUserId, getSinglePlayRankFromTo } from "../utils/singlePlay";
+import { getSinglePlayByUserId, getSinglePlayRankByUserId, getSinglePlayRankFromTo } from "../utils/singlePlay";
 import { convertTimeToMs } from "../utils/generic";
 
-type SinglePlayControllerTypes = "save" | "rank";
+type SinglePlayControllerTypes = "save" | "rank" | "data";
 
 type SinglePlayController = {
   [T in SinglePlayControllerTypes]: ExpressController;
 };
 
 const controller: SinglePlayController = {
+  data: async (req, res) => {
+    const {userId} = req.query;
+    const data = await getSinglePlayByUserId(Number(userId));
+    res.send(data);
+  },
   save: async (req, res) => {
     const {difficulty, userId, createdAt} = req.body;
     const newData = new SinglePlay();

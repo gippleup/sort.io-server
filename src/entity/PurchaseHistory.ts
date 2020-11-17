@@ -27,3 +27,5 @@ export class PurchaseHistory {
   @Column("int")
   leftGold!: number;
 }
+
+export default PurchaseHistory;

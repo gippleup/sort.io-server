@@ -103,7 +103,7 @@ export const getSinglePlayRankByUserId = async (
           total: totalUser
         };
       } else {
-        return 'NO SUCH USER'
+        return null;
       }
     })
   return paddedRankTable;

@@ -3,7 +3,7 @@ import controller from '../controller/singlePlay';
 
 const router = Router();
 
-router.get('/', (req, res) => res.send('connected'));
+router.get('/', controller.data);
 router.post('/save', controller.save);
 router.get('/rank', controller.rank);
 

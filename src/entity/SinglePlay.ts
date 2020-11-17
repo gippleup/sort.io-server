@@ -14,3 +14,5 @@ export class SinglePlay {
   @Column("int")
   difficulty!: number;
 }
+
+export default SinglePlay;

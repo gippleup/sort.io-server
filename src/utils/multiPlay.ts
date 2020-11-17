@@ -4,10 +4,10 @@ import { MultiPlay } from "../entity/MultiPlay";
 import { User } from "../entity/User";
 import { convertTimeToMs } from "./generic";
 
-export const getMultiPlayByUserId = (id: number) => {
+export const getMultiPlayByUserId = async (id: number) => {
   const multiRepo = getRepository(MultiPlay);
-  const games = multiRepo.createQueryBuilder("match")
-    .where("match.user1 = :id OR match.user2 = :id", { id })
+  const games = multiRepo.createQueryBuilder("multi_play")
+    .where("multi_play.user1 = :id OR multi_play.user2 = :id", { id })
     .getMany();
   return games;
 }
