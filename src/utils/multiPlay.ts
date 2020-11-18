@@ -36,7 +36,7 @@ type MultiPlayRankReturnData = {
 };
 
 export type RankTableQueryOption = {
-  type: "all"
+  type: "all",
 } | {
   type: "recent",
   recent: number,
@@ -153,12 +153,21 @@ const getMultiPlayRankQuery = async (option: RankTableQueryOption) => {
 export const getMultiPlayRankByUserId = async (
   id: number,
   padding: number = 3,
+  recent?: number,
 ): Promise<MultiPlayRankReturnData | null> => {
   const userRepo = getRepository(User);
   const totalUser = await userRepo
     .createQueryBuilder("user")
     .getCount();
-  const rankTableQuery = await getMultiPlayRankQuery({type: "all"})
+  const tableOption: RankTableQueryOption = recent !== undefined
+  ? {
+    type: "recent",
+    recent,
+  }
+  : {
+    type: "all",
+  };
+  const rankTableQuery = await getMultiPlayRankQuery(tableOption)
 
   const targetUserRow: RawMultiPlayRankData[] = await getConnection().query(`
     SELECT * FROM (${rankTableQuery}) AS t1

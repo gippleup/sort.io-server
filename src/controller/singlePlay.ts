@@ -34,14 +34,14 @@ const controller: SinglePlayController = {
   rank: async (req, res) => {
     const userId = req.query.userId;
     const padding = req.query.padding || 3;
+    const recent = req.query.recent || 7;
     if (userId !== undefined) {
-      const userRank = await getSinglePlayRankByUserId(Number(userId), Number(padding));
+      const userRank = await getSinglePlayRankByUserId(Number(userId), Number(padding), Number(recent));
       res.send(userRank);
     }
 
     const from = req.query.from;
     const to = req.query.to;
-    const recent = req.query.recent || 7;
     if (from !== undefined && to !== undefined) {
       const rankTable = await getSinglePlayRankFromTo(Number(from), Number(to), Number(recent))
       res.send(rankTable);

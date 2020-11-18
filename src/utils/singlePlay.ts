@@ -62,12 +62,21 @@ const getSinglePlayRankQuery = async (option: RankTableQueryOption) => {
 export const getSinglePlayRankByUserId = async (
   id: number,
   padding = 3,
+  recent?: number,
 ) => {
   const userRepo = getRepository(User);
   const totalUser = await userRepo
     .createQueryBuilder("user")
     .getCount();
-  const rankTableQuery = await getSinglePlayRankQuery({type: "all"});
+  const tableOption: RankTableQueryOption = recent !== undefined
+    ? {
+      type: "recent",
+      recent,
+    }
+    : {
+      type: "all",
+    };
+  const rankTableQuery = await getSinglePlayRankQuery(tableOption);
 
   const targetUserRow: RawUserRankData[] = await getConnection()
   .query(`
