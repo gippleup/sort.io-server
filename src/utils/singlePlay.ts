@@ -84,7 +84,7 @@ export const getSinglePlayRankByUserId = async (
     WHERE t1.id=${id}
   `);
 
-  if (!targetUserRow) return null;
+  if (!targetUserRow.length) return null;
   const rank = Number(targetUserRow[0].rank);
 
   const paddedRankTable = await getConnection()
