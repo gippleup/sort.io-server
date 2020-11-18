@@ -2,7 +2,6 @@ import { SinglePlay } from "../entity/SinglePlay";
 import { getRepository, getConnection } from "typeorm";
 import { User } from "../entity/User";
 import { convertTimeToMs } from "./generic";
-import { RankTableQueryOption } from "./multiPlay";
 
 type RawUserRankData = {
   id: number;
@@ -22,15 +21,21 @@ export const getSinglePlayByUserId = (id: number) => {
   return games;
 }
 
-const getSinglePlayRankQuery = async (option: RankTableQueryOption) => {
-  const fromDate = option.type === "recent" ? Date.now() - convertTimeToMs({day: option.recent}) : null;
+const getSinglePlayRankQuery = async (recent = 3650000) => {
+  const timeDiff = convertTimeToMs({day: recent}) / 1000;
   const userRepo = getRepository(User);
-  const totalUser = await userRepo
-    .createQueryBuilder("user")
-    .getCount();
+  const matchingData = await getConnection()
+  .query(`
+    SELECT * FROM
+      single_play INNER JOIN user
+        ON single_play.userId = user.id
+    WHERE UNIX_TIMESTAMP() - UNIX_TIMESTAMP(single_play.createdAt) <= ${timeDiff}
+    GROUP BY user.id
+  `)
+  const totalUser = matchingData.length;
 
-  const dateQuery = fromDate !== null
-    ? `WHERE UNIX_TIMESTAMP(S.createdAt) >= ${fromDate / 1000}`
+  const dateQuery = timeDiff !== null
+    ? `WHERE UNIX_TIMESTAMP() - UNIX_TIMESTAMP(S.createdAt) <= ${timeDiff}`
     : "";
 
   const lastGameTable = `
@@ -62,21 +67,20 @@ const getSinglePlayRankQuery = async (option: RankTableQueryOption) => {
 export const getSinglePlayRankByUserId = async (
   id: number,
   padding = 3,
-  recent?: number,
+  recent = 3650000,
 ) => {
   const userRepo = getRepository(User);
-  const totalUser = await userRepo
-    .createQueryBuilder("user")
-    .getCount();
-  const tableOption: RankTableQueryOption = recent !== undefined
-    ? {
-      type: "recent",
-      recent,
-    }
-    : {
-      type: "all",
-    };
-  const rankTableQuery = await getSinglePlayRankQuery(tableOption);
+  const timeDiff = convertTimeToMs({day: recent})
+  const matchingData = await getConnection()
+  .query(`
+    SELECT * FROM
+      single_play INNER JOIN user
+        ON single_play.userId = user.id
+    WHERE UNIX_TIMESTAMP() - UNIX_TIMESTAMP(single_play.createdAt) <= ${timeDiff}
+    GROUP BY user.id
+  `)
+  const totalUser = matchingData.length;
+  const rankTableQuery = await getSinglePlayRankQuery(recent);
 
   const targetUserRow: RawUserRankData[] = await getConnection()
   .query(`
@@ -123,7 +127,7 @@ export const getSinglePlayRankFromTo = async (
   to: number,
   recent: number = 7,
 ) => {
-  const rankTableQuery = await getSinglePlayRankQuery({type: "recent", recent})
+  const rankTableQuery = await getSinglePlayRankQuery(recent)
 
   const rankTable: RawUserRankData[] = await getConnection()
   .query(`

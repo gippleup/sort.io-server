@@ -35,22 +35,21 @@ type MultiPlayRankReturnData = {
   total: number;
 };
 
-export type RankTableQueryOption = {
-  type: "all",
-} | {
-  type: "recent",
-  recent: number,
-}
-
-const getMultiPlayRankQuery = async (option: RankTableQueryOption) => {
-  const fromDate = option.type === "recent" ? Date.now() - convertTimeToMs({day: option.recent}) : null;
+const getMultiPlayRankQuery = async (recent = 3650000) => {
+  const timeDiff = convertTimeToMs({day: recent}) / 1000;
   const userRepo = getRepository(User);
-  const totalUser = await userRepo
-    .createQueryBuilder("user")
-    .getCount();
+  const matchingData = await getConnection()
+  .query(`
+    SELECT * FROM
+      multi_play INNER JOIN user
+        ON multi_play.user1 = user.id OR multi_play.user2 = user.id
+    WHERE UNIX_TIMESTAMP() - UNIX_TIMESTAMP(multi_play.createdAt) <= ${timeDiff}
+    GROUP BY user.id
+  `)
+  const totalUser = matchingData.length;
 
-  const dateQuery = fromDate !== null
-    ? `WHERE UNIX_TIMESTAMP(record.gameCreatedAt) >= ${fromDate / 1000}`
+  const dateQuery = timeDiff !== null
+    ? `WHERE UNIX_TIMESTAMP() - UNIX_TIMESTAMP(record.gameCreatedAt) <= ${timeDiff}`
     : "";
 
   const tableQueryFor = (type: 'win' | 'lose' | 'draw') => {
@@ -153,21 +152,13 @@ const getMultiPlayRankQuery = async (option: RankTableQueryOption) => {
 export const getMultiPlayRankByUserId = async (
   id: number,
   padding: number = 3,
-  recent?: number,
+  recent = 3650000,
 ): Promise<MultiPlayRankReturnData | null> => {
   const userRepo = getRepository(User);
   const totalUser = await userRepo
     .createQueryBuilder("user")
     .getCount();
-  const tableOption: RankTableQueryOption = recent !== undefined
-  ? {
-    type: "recent",
-    recent,
-  }
-  : {
-    type: "all",
-  };
-  const rankTableQuery = await getMultiPlayRankQuery(tableOption)
+  const rankTableQuery = await getMultiPlayRankQuery(recent)
 
   const targetUserRow: RawMultiPlayRankData[] = await getConnection().query(`
     SELECT * FROM (${rankTableQuery}) AS t1
@@ -213,10 +204,9 @@ export const getMultiPlayRankByUserId = async (
 export const getMultiPlayRankFromTo = async (
   from: number,
   to: number,
-  recent: number
+  recent = 3650000,
 ): Promise<RawMultiPlayRankData[] | null> => {
-  const rankTableQuery = await getMultiPlayRankQuery({type: "recent", recent})
-
+  const rankTableQuery = await getMultiPlayRankQuery(recent)
   const rankTable: RawMultiPlayRankData[] = await getConnection().query(`
     SELECT * FROM (${rankTableQuery}) AS t1
     LIMIT ${from}, ${to - from}
