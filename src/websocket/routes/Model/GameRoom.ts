@@ -18,7 +18,7 @@ class GameRoom {
   createdAt: string | undefined;
   map: number[][] | undefined;
   mapDesc: MapDesc | undefined;
-  gameDuration: number = 120;
+  gameDuration: number = 60;
   interval: NodeJS.Timer | undefined;
   leftTime: number = this.gameDuration;
   leftPrepareTime: number = 0;
@@ -309,7 +309,7 @@ class GameRoom {
     }
   }
 
-  startTimer(initialTime = 120) {
+  startTimer(initialTime = this.gameDuration) {
     this.leftTime = initialTime;
     this.interval = setInterval(this.onTimerInterval, 1000 / this.fps);
     this.stopGameIfSomeLeft();
